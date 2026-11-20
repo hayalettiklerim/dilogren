@@ -3072,7 +3072,7 @@ function updateTaxi(dt){ const c=player.car; const hud=$('taxiHud');
    else { vd=-Math.min(4,dist*0.8+1); st=clamp(-wrap(hd+Math.PI-c.h)*2.2,-1,1); }
    if(dist<6) vd*=dist/6+0.25;
    thr=c.v<vd-0.4?1:(c.v>vd+0.4?-1:0); } }
- if(MOTO.active&&MOTO.mode==='taxi'&&['ride','walk','talk'].includes(MOTO.phase)){ thr=c.v>0.2?-1:(c.v<-0.2?1:0); st=0; TAXI.tgt=null; }
+ if(MOTO.active&&MOTO.mode==='taxi'&&(MOTO.pull||MOTO.phase==='walk'||MOTO.phase==='talk')&&['ride','walk','talk'].includes(MOTO.phase)){ thr=c.v>0.2?-1:(c.v<-0.2?1:0); st=0; TAXI.tgt=null; }
  if(D.active) c.v*=Math.exp(-dt*3);
  if(thr>0) c.v+=dt*(c.v<0?14:6); else if(thr<0) c.v-=dt*(c.v>0?12:4); else c.v*=Math.exp(-dt*0.6);
  const vmax=(floodLevel>0.05&&floods.some(f=>c.x>f.a&&c.x<f.b))?Math.min(6,c.vmax2||15):(c.vmax2||15); c.v=clamp(c.v,-Math.min(4,vmax*0.5),vmax);
@@ -4566,7 +4566,7 @@ function startDrone(free){ DRIVE2.mode='drone'; DRN.free=!!free; DRN.x=AIR.pad.x
  toast(free?'🛸 Serbest uçuş! W/S ileri-geri · A/D dön · R/F yüksel-alçal (dokunmatik: ⬆⬇ düğmeleri) · Pil ⚡ · iniş pistine konup E ile bitir':'🛸 Görev: 4 sarı halkadan sırayla geç, sonra H pistine in. W/S ileri-geri · A/D dön · R/F (ya da ⬆⬇) yüksel/alçal · V: kamera',6000); }
 function updateDrone(dt){ const d=DRN; const P=player; const fw=(keys.KeyW||keys.ArrowUp||mob.u?1:0)-(keys.KeyS||keys.ArrowDown||mob.d?1:0), tr=(keys.KeyA||keys.ArrowLeft||mob.l?1:0)-(keys.KeyD||keys.ArrowRight||mob.r?1:0); const up=(keys.KeyR||keys.Space||(d.upT>T)?1:0)-(keys.KeyF||keys.ShiftLeft||(d.dnT>T)?1:0);
  d.h+=tr*1.8*dt; const f=[Math.cos(d.h),-Math.sin(d.h)]; d.vx+=(f[0]*fw*7-d.vx)*Math.min(1,dt*2.5); d.vz+=(f[1]*fw*7-d.vz)*Math.min(1,dt*2.5); d.vy+=(up*3.2-d.vy)*Math.min(1,dt*3);
- d.x=clamp(d.x+d.vx*dt,-125,125); d.z=clamp(d.z+d.vz*dt,-255,-95); d.y=clamp(d.y+d.vy*dt,0.08,120); d.bat-=dt*0.9; d.rot.forEach((r,i)=>r.rotation.y+=dt*(30+i)); d.g.position.set(d.x,d.y,d.z); d.g.rotation.set(-d.vz*0.02*Math.cos(d.h)+(d.vx*0.02*Math.sin(d.h)),d.h,-(fw*0.18));
+ d.x=clamp(d.x+d.vx*dt,DRN.free?-430:-125,DRN.free?640:125); d.z=clamp(d.z+d.vz*dt,-255,DRN.free?230:-95); d.y=clamp(d.y+d.vy*dt,0.08,120); d.bat-=dt*0.9; d.rot.forEach((r,i)=>r.rotation.y+=dt*(30+i)); d.g.position.set(d.x,d.y,d.z); d.g.rotation.set(-d.vz*0.02*Math.cos(d.h)+(d.vx*0.02*Math.sin(d.h)),d.h,-(fw*0.18));
  P.h.anim='idle'; P.yaw=Math.atan2(d.x-P.x,d.z-P.z);
  if(!d.free&&d.ri<4){ const r=DRN_R[d.ri]; if(Math.hypot(d.x-r.position.x,d.y-r.position.y,d.z-r.position.z)<1.7){ r.material.color.set(0x00e676); d.ri++; sfxDing(); toast(d.ri<4?'✅ Halka '+d.ri+'/4!':'✅ Tüm halkalar tamam! Şimdi H pistine in (F ile alçal).',2200); } }
  const onPad=Math.hypot(d.x-AIR.pad.x,d.z-AIR.pad.z)<1.8&&d.y<0.3;
@@ -4771,7 +4771,7 @@ const _ead11=extraAfterDialog; extraAfterDialog=function(sc,n){ const closed=D.c
  if(sc==='raceAfter'&&MS.cur&&['kart','f1','moto'].includes(MS.cur.type)) completeMission();
  const CM={flyIntro:'pilot',atcTaxi:'atc',atcTakeoff:'atc',droneLesson:'drone',surfLesson:'surfcoach',msDesk:'racer',kartBrief:'mechanic',f1Eng:'engineer',motoInstr:'racer',driftInstr:'racer'}; if(CM[sc]) meetCareer(CM[sc]); };
 const _cs11=chooseScenario; chooseScenario=function(n){
- if(n===BURAK||n===SELIN||n===KAAN||n===MERT){ if(!S.ms.desk){ toast('🎫 Önce resepsiyonda (Ece) kayıt ol!',3000); return null; } if(n===SELIN&&!(S.ms.kartLaps>=2||S.ms.kartRace)){ toast('🏎️ F1 için önce go-kartta en az 2 tur at (tecrübe!).',3500); return null; } }
+ if(n===BURAK||n===SELIN||n===KAAN||n===MERT){ if(!S.ms.desk){ toast('🎫 Önce resepsiyonda (Ece) kayıt ol!',3000); return null; } if(n===SELIN&&!(S.ms.kartLaps>=1||S.ms.kartRace)){ toast('🏎️ Formül aracı için önce go-kartla en az 1 tam tur atmalısın. Burak\'tan eğitim al, park alanından bir kart seç!',4500); return null; } }
  if(n===ELIF&&PLN.phase!=='parked') return null; if(n===DENIZ&&S.surfLesson) return 'surfLesson'; return _cs11(n); };
 // görevler
 const NEWT11=['fly','drone','surf','kart','f1','moto','drift'];
@@ -6828,6 +6828,1029 @@ const _ut26=updateTime; updateTime=function(dt){ _ut26(dt); const ov=W.cur.cloud
  if(nightF>0.5){ const P=player; sun.position.set(P.x-sx*80,Math.max(25,-sy*100),P.z-60); sun.color.set(0xb4c6ff); sun.intensity=Math.max(sun.intensity,(0.42+0.1*(1-ov))*(1-ov*0.6)); } };
 // deniz parlasın (güneş/ay yansıması)
 if(typeof seaMat!=='undefined'){ seaMat.roughness=0.22; seaMat.metalness=0.15; }
+
+// ================= v24: her yere gidebil (havalimanı, drone, yarış parkı haritada) · kalabalık ayarı gerçekten çalışsın · bisiklet gaz/fren · BMX akrobatlar · sürerken sohbet · KAPADOKYA BALON VADİSİ =================
+// ---------- diyaloglar
+SC.bmx={topic:'Konu: Kaldırımda akrobasi yapan BMX\'çiyle konuş — hareketlerin adlarını, güvenliği sor; yedek BMX\'ini dene.',steps:[
+ N(["Hi! Look at my bike!","Selam! Bisikletime bak!"],["Hey! Did you see that jump?","Hey! O atlayışı gördün mü?"],["Hey there! Did you catch that? That was a bunny hop with a 360!","Selam! Gördün mü? O, 360 dönüşlü bir bunny hop'tu!"],["Hey! Did you catch that one? Bunny hop straight into a full 360!","Selam! Şunu gördün mü? Bunny hop'tan doğrudan tam bir 360!"]),
+ Y('Çok iyi olduğunu söyle; hareketin adını sor.',["Wow! What is that?","Vay! O ne?"],["That was amazing! What's that trick called?","Harikaydı! O hareketin adı ne?"],["That was incredible! What do you call the one where the front wheel goes up?","İnanılmazdı! Ön tekerin kalktığı harekete ne diyorsunuz?"],["Impressive! What's the name of the trick where you ride on the back wheel?","Etkileyici! Arka tekerde gittiğin hareketin adı ne?"]),
+ N(["It is a wheelie.","Adı wheelie."],["That's a wheelie. I ride on the back wheel.","O bir wheelie. Arka tekerde giderim."],["That's a wheelie — you pull up and ride on the back wheel. Jumping with both wheels is a bunny hop.","O wheelie — çekip arka tekerde gidersin. İki tekerle zıplamaya bunny hop denir."],["That's a wheelie: you lift the front and balance on the back wheel. Hopping with both wheels off the ground is a bunny hop.","O wheelie: önü kaldırıp arka tekerde dengede durursun. İki teker yerden kalkarak zıplamaya bunny hop denir."]),
+ Y('Tehlikeli olup olmadığını sor.',["Is it dangerous?","Tehlikeli mi?"],["Isn't it dangerous?","Tehlikeli değil mi?"],["Isn't it dangerous doing tricks on the pavement?","Kaldırımda hareket yapmak tehlikeli değil mi?"],["Isn't it a bit risky doing tricks right here on the pavement?","Burada, kaldırımda hareket yapmak biraz riskli değil mi?"]),
+ N(["I have a helmet.","Kaskım var."],["I always wear a helmet and I watch out for people.","Her zaman kask takarım ve insanlara dikkat ederim."],["A little, so I always wear a helmet and pads, and I only jump when nobody is walking past.","Biraz, o yüzden hep kask ve dizlik takarım, sadece kimse geçmiyorken atlarım."],["Somewhat — which is why I never skip the helmet and pads, and I only jump when the pavement's clear.","Biraz — o yüzden kaskı ve koruyucuları asla atlamam, sadece kaldırım boşken atlarım."]),
+ Y('Senin de deneyip deneyemeyeceğini sor.',["Can I try?","Ben deneyebilir miyim?"],["Can I try it too?","Ben de deneyebilir miyim?"],["Could I have a go on a BMX?","BMX'le bir deneyebilir miyim?"],["Would you mind if I had a go?","Bir denesem sorun olur mu?"]),
+ Object.assign(N(["Yes! Take my bike!","Evet! Bisikletimi al!"],["Sure! Take my spare BMX. Space to jump!","Tabii! Yedek BMX'imi al. Zıplamak için Boşluk!"],["Of course! Take my spare BMX. Press SPACE to bunny hop and Q for a wheelie. Go fast for a 360!","Tabii! Yedek BMX'imi al. Bunny hop için BOŞLUK, wheelie için Q. 360 için hızlı git!"],["Be my guest — grab the spare BMX. SPACE to hop, hold Q to wheelie, and with enough speed you'll spin a 360!","Buyur — yedek BMX'i al. Zıplamak için BOŞLUK, wheelie için Q'yu basılı tut; yeterince hızlıysan 360 dönersin!"]),{act:'bmxGive'}),
+ Y('Teşekkür et.',["Thank you!","Teşekkürler!"],["Thanks a lot! I'll be careful.","Çok teşekkürler! Dikkatli olacağım."],["Thanks! I'll be careful and bring it back.","Sağ ol! Dikkatli olurum ve geri getiririm."],["Cheers! I'll take good care of it.","Sağ ol! Ona iyi bakacağım."])
+]};
+SC.rideChat={quick:true,topic:'Konu: Bisikletle yan yana giderken sohbet et — nereye gittiğini, ne kadar sürdüğünü sor, trafiğe dikkat.',steps:[
+ N(["Hi! Nice bike!","Selam! Güzel bisiklet!"],["Hi! Nice bike! Shall we ride together?","Selam! Güzel bisiklet! Birlikte sürelim mi?"],["Hey! Nice bike! Want to ride together for a bit?","Selam! Güzel bisiklet! Biraz birlikte sürmek ister misin?"],["Hey there — nice wheels! Fancy riding together for a while?","Selam — güzel bisiklet! Bir süre birlikte sürmeye ne dersin?"]),
+ Y('Evet de; nereye gittiğini sor.',["Yes! Where are you going?","Evet! Nereye gidiyorsun?"],["Sure! Where are you going?","Tabii! Nereye gidiyorsun?"],["I'd love to! Where are you heading?","Çok isterim! Nereye gidiyorsun?"],["Sounds good! Where are you headed?","Olur! Nereye doğru gidiyorsun?"]),
+ N(["To the beach.","Plaja."],["I'm going to the beach. It's my favourite ride.","Plaja gidiyorum. En sevdiğim rota."],["I'm riding along the coast to the beach — it's my favourite route because there's no traffic.","Sahil boyunca plaja gidiyorum — en sevdiğim rota çünkü trafik yok."],["I'm cruising along the coast down to the beach — my favourite route, since there's hardly any traffic.","Sahil boyunca plaja doğru gidiyorum — en sevdiğim rota, çünkü neredeyse hiç trafik yok."]),
+ Y('Her gün bisiklete binip binmediğini sor.',["Every day?","Her gün mü?"],["Do you ride every day?","Her gün bisiklete biniyor musun?"],["Do you cycle every day? How far do you ride?","Her gün bisiklet sürüyor musun? Ne kadar yol gidiyorsun?"],["Do you ride every day? What sort of distance do you cover?","Her gün sürüyor musun? Ne kadar mesafe yapıyorsun?"]),
+ N(["Yes! Ten kilometres.","Evet! On kilometre."],["Yes, about ten kilometres a day.","Evet, günde yaklaşık on kilometre."],["Almost every day — about fifteen kilometres. It keeps me fit and I never wait in traffic!","Neredeyse her gün — yaklaşık on beş kilometre. Formda tutuyor ve hiç trafikte beklemiyorum!"],["Pretty much daily — around fifteen kilometres. It keeps me fit, and I never get stuck in traffic.","Neredeyse her gün — on beş kilometre kadar. Formda tutuyor ve hiç trafiğe takılmıyorum."]),
+ N(["Look out! A dog!","Dikkat! Köpek!"],["Watch out! There's a dog on the path!","Dikkat et! Yolda bir köpek var!"],["Careful — slow down, there's a dog crossing up ahead!","Dikkat — yavaşla, ilerde karşıdan karşıya geçen bir köpek var!"],["Heads up — ease off, there's a dog crossing just ahead!","Dikkat — yavaşla, hemen ilerde karşıya geçen bir köpek var!"]),
+ Y('Teşekkür et, yavaşladığını söyle.',["OK! Thank you!","Tamam! Teşekkürler!"],["Thanks! I'm slowing down.","Teşekkürler! Yavaşlıyorum."],["Thanks for the warning! I'm braking.","Uyardığın için sağ ol! Fren yapıyorum."],["Cheers for the heads-up — braking now.","Uyarı için sağ ol — fren yapıyorum."]),
+ N(["Bye! See you!","Hoşça kal! Görüşürüz!"],["This is my turn. See you later!","Ben buradan dönüyorum. Sonra görüşürüz!"],["This is where I turn off. It was fun riding with you — see you around!","Ben buradan sapıyorum. Seninle sürmek eğlenceliydi — görüşürüz!"],["This is my turn-off — great riding with you. Catch you later!","Ben buradan sapıyorum — seninle sürmek harikaydı. Sonra görüşürüz!"])
+]};
+SC.balloonCourse={topic:'Konu: Balon pilotluğu kursu — brülörü, valfi, rüzgâr katmanlarını ve inişi öğren; kurs ücretini öde.',init:v=>{ v.total=600; },steps:[
+ N(["Hello! I am a balloon pilot.","Merhaba! Ben balon pilotuyum."],["Welcome! Do you want to be a balloon pilot?","Hoş geldin! Balon pilotu olmak ister misin?"],["Welcome to the balloon school! Would you like to learn to fly a hot-air balloon?","Balon okuluna hoş geldin! Sıcak hava balonu uçurmayı öğrenmek ister misin?"],["Welcome to our balloon school! Fancy learning to pilot a hot-air balloon yourself?","Balon okulumuza hoş geldin! Sıcak hava balonunu kendin uçurmayı öğrenmeye ne dersin?"]),
+ Y('Evet de; balonun nasıl yükseldiğini sor.',["Yes! How does it go up?","Evet! Nasıl yükselir?"],["Yes! How does a balloon go up?","Evet! Balon nasıl yükselir?"],["Yes, please! How does a balloon actually go up?","Evet, lütfen! Balon aslında nasıl yükselir?"],["Absolutely! What actually makes a balloon rise?","Kesinlikle! Balonu aslında ne yükseltir?"]),
+ N(["Hot air goes up.","Sıcak hava yükselir."],["Hot air is lighter. The burner makes the air hot.","Sıcak hava daha hafiftir. Brülör havayı ısıtır."],["Hot air is lighter than cold air. When you use the burner, the air inside gets hotter and the balloon rises.","Sıcak hava soğuk havadan hafiftir. Brülörü yakınca içerideki hava ısınır ve balon yükselir."],["Hot air is less dense than cold air, so when you fire the burner the envelope heats up and the whole balloon lifts.","Sıcak hava soğuk havadan daha az yoğundur; brülörü yakınca balon ısınır ve tümüyle yükselir."]),
+ Y('Nasıl alçaldığını sor.',["How does it go down?","Nasıl alçalır?"],["And how do I go down?","Peki nasıl alçalırım?"],["And how do I bring it down again?","Peki onu tekrar nasıl indiririm?"],["And how do you get it to descend?","Peki onu nasıl alçaltırsın?"]),
+ N(["Open the top. Hot air goes out.","Tepeyi aç. Sıcak hava çıkar."],["You open the vent at the top. Hot air goes out and you go down.","Tepedeki valfi açarsın. Sıcak hava çıkar ve alçalırsın."],["You pull the vent rope. A valve at the top opens, hot air escapes and the balloon goes down.","Valf ipini çekersin. Tepedeki kapak açılır, sıcak hava kaçar ve balon alçalır."],["You pull the vent line, which opens a valve at the crown; hot air escapes and you start to sink.","Valf ipini çekersin; tepedeki kapak açılır, sıcak hava kaçar ve alçalmaya başlarsın."]),
+ Y('Balonu nasıl yönlendirdiğini (direksiyon var mı) sor.',["Is there a steering wheel?","Direksiyon var mı?"],["How do I steer it? Left or right?","Nasıl yönlendiririm? Sağa ya da sola?"],["There's no steering wheel — so how do you choose your direction?","Direksiyon yok — peki yönü nasıl seçiyorsun?"],["Since there's no steering, how on earth do you pick a direction?","Direksiyon olmadığına göre yönü nasıl seçiyorsun ki?"]),
+ N(["The wind takes you.","Rüzgâr seni götürür."],["The wind moves you. The wind is different up and down.","Rüzgâr seni taşır. Aşağıda ve yukarıda rüzgâr farklıdır."],["The wind blows in different directions at different heights. You go up or down to find the wind you want!","Rüzgâr farklı yüksekliklerde farklı yönlerde eser. İstediğin rüzgârı bulmak için yükselir ya da alçalırsın!"],["The wind blows in different directions at different altitudes, so you steer by climbing or descending into the layer that's going your way.","Rüzgâr farklı irtifalarda farklı yönlere eser; istediğin yöne giden katmana yükselerek ya da alçalarak dümen tutarsın."]),
+ N(["Quiz! How do you go up?","Bilmece! Nasıl yükselirsin?"],["Quiz! What do you use to go up?","Bilmece! Yükselmek için ne kullanırsın?"],["Quick test: what do you use to make the balloon rise?","Hızlı test: Balonu yükseltmek için ne kullanırsın?"],["Quick check: what makes the balloon climb?","Hızlı kontrol: Balonu ne tırmandırır?"]),
+ {raw:'y',hint:'Yükselmek için ne kullanılır?',opts:[["The burner — it heats the air.","Brülör — havayı ısıtır.",2],["The vent at the top.","Tepedeki valf.",0],["A steering wheel.","Direksiyon.",0]]},
+ N(["Yes! Good!","Evet! Güzel!"],["Correct! The burner. Well done!","Doğru! Brülör. Aferin!"],["Correct! And to land, you descend slowly into a field with no wind. Never land fast!","Doğru! İnmek için rüzgârsız bir tarlaya yavaşça alçalırsın. Asla hızlı inme!"],["Spot on! And when landing, come down gently into an open field — never drop in fast.","Tam isabet! İnerken de açık bir tarlaya yavaşça alçal — asla hızlı düşme."]),
+ Y('Kursa kaydolmak istediğini, ne kadar olduğunu sor.',["How much is the course?","Kurs ne kadar?"],["I want to do the course. How much is it?","Kursa katılmak istiyorum. Ne kadar?"],["I'd like to sign up for the course. How much does it cost?","Kursa yazılmak istiyorum. Ücreti ne kadar?"],["I'd like to enrol. What does the course cost?","Kaydolmak istiyorum. Kurs ücreti ne kadar?"]),
+ N(["600 lira.","600 lira."],["It's 600 lira, and you get a pilot card.","600 lira, pilot kartı da veriyoruz."],["It's 600 lira. After that you get your pilot card and you can fly your own balloon!","600 lira. Sonra pilot kartını alırsın ve kendi balonunu uçurabilirsin!"],["It's 600 lira, and once you're done you'll have your pilot card and your very own balloon to fly.","600 lira; bitirince pilot kartın olur ve uçurabileceğin kendi balonun da."]),
+ ...PAY_TAIL,
+ Object.assign(N(["Here is your card! Fly safe!","İşte kartın! İyi uçuşlar!"],["Here's your pilot card. Have a safe flight!","İşte pilot kartın. İyi ve güvenli uçuşlar!"],["Congratulations, Captain! Here's your pilot card. Your balloon is on the launch field.","Tebrikler Kaptan! İşte pilot kartın. Balonun kalkış alanında."],["Congratulations, Captain! Here's your pilot card — your balloon's waiting on the launch field.","Tebrikler Kaptan! İşte pilot kartın — balonun kalkış alanında seni bekliyor."]),{act:'balloonLic'})
+]};
+SC.balloonRide={topic:'Konu: Balon pilotundan balon turu bileti al — süreyi, ne göreceğini sor, öde.',init:v=>{ v.total=350; },steps:[
+ N(["Hello! Balloon tour?","Merhaba! Balon turu?"],["Good morning! Would you like a balloon flight?","Günaydın! Balonla uçmak ister misin?"],["Good morning! Would you like to fly over the fairy chimneys in my balloon?","Günaydın! Balonumla peri bacalarının üstünde uçmak ister misin?"],["Good morning! Care to float over the fairy chimneys with me?","Günaydın! Benimle peri bacalarının üstünde süzülmeye ne dersin?"]),
+ Y('Ne kadar sürdüğünü ve ne göreceğini sor.',["How long? What can I see?","Ne kadar sürer? Ne görürüm?"],["How long is the flight, and what will we see?","Uçuş ne kadar sürüyor, ne göreceğiz?"],["How long does the flight last, and what will we see from up there?","Uçuş ne kadar sürüyor, yukarıdan neler göreceğiz?"],["How long are we up for, and what's the view like?","Ne kadar havada kalıyoruz, manzara nasıl?"]),
+ N(["One hour. Fairy chimneys!","Bir saat. Peri bacaları!"],["About an hour. You can see the fairy chimneys and the valleys.","Yaklaşık bir saat. Peri bacalarını ve vadileri görebilirsin."],["About an hour. We fly over the fairy chimneys, the valleys and cave houses, with dozens of other balloons around us.","Yaklaşık bir saat. Peri bacalarının, vadilerin ve kaya evlerin üstünden, etrafımızda onlarca balonla uçuyoruz."],["Roughly an hour — over the fairy chimneys, the valleys and the cave dwellings, surrounded by dozens of other balloons.","Aşağı yukarı bir saat — peri bacalarının, vadilerin ve kaya evlerin üstünden, etrafımız onlarca balonla dolu."]),
+ Y('Fiyatı sor.',["How much?","Ne kadar?"],["How much is a ticket?","Bilet ne kadar?"],["How much does a ticket cost?","Bir bilet ne kadar?"],["What's the price per person?","Kişi başı fiyat ne?"]),
+ N(["350 lira.","350 lira."],["It's 350 lira.","350 lira."],["It's 350 lira, including breakfast after landing!","350 lira, inişten sonra kahvaltı dahil!"],["It's 350 lira — breakfast after landing included.","350 lira — inişten sonra kahvaltı dahil."]),
+ ...PAY_TAIL,
+ Object.assign(N(["Get in the basket!","Sepete bin!"],["Great! Get in the basket, please.","Harika! Sepete bin, lütfen."],["Wonderful! Climb into the basket and hold on to the handles.","Harika! Sepete gir ve tutamaklara tutun."],["Splendid! Hop into the basket and keep hold of the handles.","Harika! Sepete gir ve tutamaklara tutun."]),{act:'balloonRideGo'})
+]};
+SC.balloonPax={quick:true,topic:'Konu: Balon sepetindeki turistle sohbet et — manzara, yükseklik, nereden geldiği.',steps:[
+ N(["Wow! So high!","Vay! Çok yüksek!"],["Wow, we are so high! Look at the view!","Vay, çok yüksekteyiz! Manzaraya bak!"],["This is unbelievable! Look — you can see hundreds of fairy chimneys from up here!","İnanılmaz! Bak — buradan yüzlerce peri bacası görünüyor!"],["This is unreal — look, you can see hundreds of fairy chimneys from up here!","Gerçek dışı — bak, buradan yüzlerce peri bacası görünüyor!"]),
+ Y('Katıl; korkup korkmadığını sor.',["Are you scared?","Korkuyor musun?"],["It's beautiful! Are you scared?","Çok güzel! Korkuyor musun?"],["It's breathtaking! Are you afraid of heights?","Nefes kesici! Yükseklikten korkar mısın?"],["It's breathtaking! You're not afraid of heights, are you?","Nefes kesici! Yükseklikten korkmuyorsun, değil mi?"]),
+ N(["A little!","Biraz!"],["A little, but it's so quiet and calm!","Biraz, ama çok sessiz ve sakin!"],["A little at first, but it's so peaceful — you only hear the burner now and then.","İlk başta biraz, ama çok huzurlu — sadece arada brülörü duyuyorsun."],["Only a touch at first — but it's so serene; all you hear is the odd roar of the burner.","İlk başta azıcık — ama öyle huzurlu ki; tek duyduğun arada bir brülörün gürlemesi."]),
+ Y('Nereden geldiğini sor.',["Where are you from?","Nerelisin?"],["Where are you from?","Nerelisin?"],["Where are you visiting from?","Nereden ziyarete geldin?"],["Where have you travelled from?","Nereden geldin?"]),
+ N(["From Japan.","Japonya'dan."],["I'm from Japan. I came to see the balloons.","Japonya'dan geldim. Balonları görmeye geldim."],["I'm from Japan. Seeing the Cappadocia balloons was always my dream!","Japonya'danım. Kapadokya balonlarını görmek hep hayalimdi!"],["I'm from Japan — floating over Cappadocia has been on my bucket list for years!","Japonya'danım — Kapadokya'nın üstünde süzülmek yıllardır hayal listemdeydi!"])
+]};
+SC.capTourist={topic:'Konu: Vadideki turistle peri bacalarını konuş — nasıl oluştular, Kapadokya adının anlamı.',steps:[
+ N(["Hello! Look at the rocks!","Merhaba! Kayalara bak!"],["Hi! Aren't these rocks amazing?","Merhaba! Bu kayalar harika değil mi?"],["Hello! Have you ever seen anything like these fairy chimneys?","Merhaba! Hiç bu peri bacaları gibi bir şey gördün mü?"],["Hello! Have you ever seen anything quite like these fairy chimneys?","Merhaba! Hiç bu peri bacalarına benzer bir şey gördün mü?"]),
+ Y('Nasıl oluştuklarını sor.',["How did they form?","Nasıl oluştular?"],["How did these rocks get this shape?","Bu kayalar bu şekli nasıl aldı?"],["Do you know how these fairy chimneys were formed?","Bu peri bacalarının nasıl oluştuğunu biliyor musun?"],["Any idea how these fairy chimneys came to be?","Bu peri bacalarının nasıl oluştuğuna dair fikrin var mı?"]),
+ N(["Volcanoes. Long ago.","Volkanlar. Çok önce."],["Volcanoes made soft rock. Wind and rain shaped it.","Volkanlar yumuşak kaya yaptı. Rüzgâr ve yağmur şekil verdi."],["Millions of years ago, volcanoes covered the land with ash. It became soft rock, and wind and rain slowly carved it.","Milyonlarca yıl önce volkanlar her yeri külle kapladı. Bu yumuşak kayaya dönüştü, rüzgâr ve yağmur onu yavaş yavaş oydu."],["Millions of years ago volcanic eruptions blanketed the area in ash, which hardened into soft tuff; wind and rain have been sculpting it ever since.","Milyonlarca yıl önce volkan patlamaları bölgeyi külle örttü; bu kül yumuşak tüfe dönüştü ve rüzgârla yağmur o zamandan beri onu yontuyor."]),
+ Y('Tepelerindeki koyu "şapkaları" sor.',["What is on top?","Tepedeki ne?"],["What are the dark 'hats' on top?","Tepedeki koyu 'şapkalar' ne?"],["Why do many of them have a dark 'hat' on top?","Neden birçoğunun tepesinde koyu bir 'şapka' var?"],["What's the story with the dark caps on top of them?","Tepelerindeki koyu başlıkların hikâyesi ne?"]),
+ N(["Hard rock.","Sert kaya."],["That's hard rock. It protects the soft rock under it.","O sert kaya. Altındaki yumuşak kayayı korur."],["That's harder rock. It protects the soft rock underneath like an umbrella, so a tall chimney is left.","O daha sert bir kaya. Altındaki yumuşak kayayı şemsiye gibi korur, böylece uzun bir baca kalır."],["That's a harder layer of rock acting like an umbrella — it shields the soft tuff beneath, leaving these tall columns behind.","O daha sert bir katman; şemsiye gibi altındaki yumuşak tüfü korur ve geride bu uzun sütunlar kalır."]),
+ Y('Kapadokya adının ne anlama geldiğini sor.',["What does Cappadocia mean?","Kapadokya ne demek?"],["What does the name 'Cappadocia' mean?","'Kapadokya' adı ne anlama geliyor?"],["Do you know what the name 'Cappadocia' means?","'Kapadokya' adının ne anlama geldiğini biliyor musun?"],["Do you happen to know what 'Cappadocia' actually means?","'Kapadokya'nın aslında ne anlama geldiğini biliyor musun?"]),
+ N(["Land of beautiful horses!","Güzel atlar ülkesi!"],["People say it means 'land of beautiful horses'.","'Güzel atlar ülkesi' anlamına geldiği söylenir."],["People say it comes from an old Persian name meaning 'land of beautiful horses'. And people lived in caves here!","Güzel atlar ülkesi anlamına gelen eski bir Farsça addan geldiği söylenir. Ve burada insanlar mağaralarda yaşamış!"],["It's said to derive from an old Persian name meaning 'land of beautiful horses' — and people have lived in these rock caves for centuries.","Güzel atlar ülkesi anlamına gelen eski bir Farsça addan geldiği söylenir — ve insanlar yüzyıllardır bu kaya mağaralarda yaşıyor."]),
+ Y('Teşekkür et.',["Thank you!","Teşekkürler!"],["Thanks! That's very interesting.","Teşekkürler! Çok ilginç."],["Thanks — I'll look at them differently now!","Teşekkürler — artık onlara farklı bakacağım!"],["Thanks — I'll never look at them the same way again!","Teşekkürler — artık onlara asla eskisi gibi bakmayacağım!"])
+]};
+
+// ---------- 1) HER YERE GİT: şehir dışı bölgeler haritada + ışınlanma bölgeye girsin
+ZONES.cap={x1:-430,x2:-165,z1:-250,z2:-35,spawn:[-186,-52],name:'Kapadokya Balon Vadisi',en:'the balloon valley',tr:'balon vadisine'};
+function zoneOf(x,z){ for(const k in ZONES){ const Z=ZONES[k]; if(x>=Z.x1&&x<=Z.x2&&z>=Z.z1&&z<=Z.z2) return k; } return null; }
+const _tp27=teleportTo; teleportTo=function(x,z,name){ const k=zoneOf(x,z); if(!k) return _tp27(x,z,name);
+ if(player.car||DRIVE2.mode||(typeof GAME!=='undefined'&&GAME.active)||ROOM.active||(typeof BOAT!=='undefined'&&BOAT.cur)||(typeof INT!=='undefined'&&INT.cur)||BAL.on){ toast('🚫 Şu an ışınlanamazsın: önce araçtan / tekneden / camiden / balondan in.',3200); return; }
+ const Z=ZONES[k]; closeCityMap(); fadeScreen(()=>{ const P=player; P.zone=Z; P.zk=k; P.x=clamp(x,Z.x1+1,Z.x2-1); P.z=clamp(z,Z.z1+1,Z.z2-1); const q=collide(P.x,P.z,0.4); P.x=q[0]; P.z=q[1]; P.target=null; camS.pos.set(P.x-6,3.5,P.z); if(typeof retargetMission==='function') retargetMission(); },300);
+ toast('📍 '+name.replace(/^[^ ]+ /,'')+' — geldin! (Şehre dönmek için haritadan şehirde bir yere dokun.)',3500); };
+buildingsMap.unshift({x1:-128,x2:128,z1:-258,z2:-92,c:'#7da15c'},{x1:-120,x2:120,z1:-181,z2:-159,c:'#3a3d42'},{x1:142,x2:338,z1:-258,z2:-72,c:'#6f9a52'},{x1:-430,x2:-165,z1:-250,z2:-35,c:'#d8b27c'});
+const _bp27=buildPOIs; buildPOIs=function(){ _bp27(); CM.pois.push(
+ {n:'✈️ Havalimanı — uçak (Kaptan Elif)',x:-27,z:-100,go:[-27,-98],k:'big'},{n:'🛸 Drone alanı (eğitmen Can)',x:70,z:-110,go:[68,-108],k:'big'},{n:'🛩️ Hangar',x:-100,z:-123,go:[-100,-112],k:'big'},
+ {n:'🏁 Motor Sporları Parkı (resepsiyon)',x:200,z:-86,go:[200,-89],k:'big'},{n:'🏎️ Go-kart (Burak)',x:158,z:-104,go:[158,-107],k:'big'},{n:'🏁 Formül pisti (Selin)',x:246,z:-87,go:[246,-90],k:'big'},{n:'🏍️ Motosiklet (Kaan)',x:262,z:-87,go:[262,-90],k:'big'},{n:'💨 Drift alanı (Mert)',x:156,z:-210,go:[156,-207],k:'big'},
+ {n:'🎈 Kapadokya Balon Vadisi',x:-200,z:-70,go:[-186,-52],k:'big'},{n:'🎓 Balon pilotluğu okulu',x:-196,z:-48,go:[-192,-52],k:'big'},
+ ...BMXS.map((b,i)=>({n:'🚲 BMX akrobatları '+(i+1),x:b.x0,z:b.z0,go:[b.x0,b.z0+(b.z0<0?-1.2:1.2)],k:'big'}))); };
+CM.pois.length=0;
+// hub menüsüne kısayol
+const _oh27=openHub; openHub=function(){ _oh27(); const g=$('menuBox').querySelector('.grid'); if(!g) return; g.insertAdjacentHTML('afterbegin',`<button class="card" id="hZ1"><b>✈️ Havalimanı & Drone</b>uçak · drone</button><button class="card" id="hZ2"><b>🏁 Yarış parkı</b>kart · formül · motor · drift</button><button class="card" id="hZ3"><b>🎈 Balon vadisi</b>peri bacaları · balon pilotu</button>`);
+ $('hZ1').onclick=()=>{ closeMenu(); teleportTo(-27,-98,'✈️ Havalimanı'); }; $('hZ2').onclick=()=>{ closeMenu(); teleportTo(200,-89,'🏁 Motor Sporları Parkı'); }; $('hZ3').onclick=()=>{ closeMenu(); teleportTo(-186,-52,'🎈 Balon Vadisi'); }; };
+
+// ---------- 2) KALABALIK: fazladan kişiler oyuncunun çevresinde dolaşsın (uzaktakiler zaten görünmüyordu)
+CRW.max=130;
+function relocateExtra(n){ const P=player; const Z=P.zone; for(let t=0;t<8;t++){ const a=Math.random()*Math.PI*2, d=rnd(14,46); let x=P.x+Math.cos(a)*d, z=P.z+Math.sin(a)*d;
+  if(Z){ if(x<Z.x1+1||x>Z.x2-1||z<Z.z1+1||z>Z.z2-1) continue; } else { const q=cityClamp(x,z); if(Math.hypot(q[0]-x,q[1]-z)>0.5) continue; }
+  const q2=collide(x,z,0.45); if(Math.hypot(q2[0]-x,q2[1]-z)>0.05) continue;
+  const onMain=!Z&&x>-118&&x<262&&Math.abs(z)>6.8&&Math.abs(z)<10.5;
+  n.x=n.home.x=x; n.z=n.home.z=z; n.y=0;
+  if(onMain){ n.beh='walker'; n.data={side:Math.sign(z)}; n.path=[]; n.state='walker'; }
+  else { n.beh='static'; n.state='static'; n.home.yaw=n.yaw=rnd(0,6.28); n.home.anim=pick(['idle','idle','film','idle']); }
+  return true; } return false; }
+const _upd27c=updateP6; updateP6=function(dt){ _upd27c(dt); CRW.rt=(CRW.rt||0)-dt; if(CRW.rt<=0){ CRW.rt=1.2; if(S.crowd>1){ if(CRW.extra.length<Math.ceil((S.crowd-1)/1.5*CRW.max)) applyCrowd(); let k=0; for(const n of CRW.extra){ if(n.crowdOff||n.state==='talking'||n.state==='listen') continue; if(n.dist>62||n._new===undefined){ n._new=1; if(relocateExtra(n)&&++k>12) break; } } } } };
+// ayar etiketi: üst sınır %300
+const _bSet27=$('bSet').onclick; $('bSet').onclick=function(){ _bSet27(); const r=$('sCrowd'); if(r){ r.max='3'; } };
+
+// ---------- 3) BİSİKLET: ileri bastıkça hızlan, geri bastıkça yavaşla
+_el('div','bikeHud'); (function(){ const s=document.createElement('style'); s.textContent='#bikeHud{position:fixed;left:50%;top:64px;transform:translateX(-50%);background:rgba(10,20,40,.72);color:#fff;border-radius:14px;padding:6px 14px;font-weight:900;z-index:16;display:none;font-size:14px;text-align:center}#bikeHud .bar{height:6px;background:#334;border-radius:3px;margin-top:4px;overflow:hidden}#bikeHud .bar i{display:block;height:100%;background:linear-gradient(90deg,#4caf50,#ffeb3b,#f44336)}#bmxBtns{position:fixed;right:12px;bottom:170px;display:none;flex-direction:column;gap:8px;z-index:18}#bmxBtns button{width:64px;height:64px;border-radius:50%;border:2px solid #fff;background:rgba(255,111,0,.85);color:#fff;font-weight:900;font-size:13px}'; document.head.appendChild(s); })();
+_el('div','bmxBtns'); $('bmxBtns').innerHTML='<button id="bxHop">🦘<br>Zıpla</button><button id="bxWh">🤸<br>Wheelie</button>';
+const BMXK={hop:false,wh:false}; $('bxHop').addEventListener('pointerdown',e=>{ e.preventDefault(); BMXK.hop=true; }); const whOn=e=>{ e.preventDefault(); BMXK.wh=true; }, whOff=()=>{ BMXK.wh=false; }; $('bxWh').addEventListener('pointerdown',whOn); ['pointerup','pointerleave','pointercancel'].forEach(k=>$('bxWh').addEventListener(k,whOff));
+addEventListener('keydown',e=>{ if(document.activeElement.tagName==='INPUT') return; if(e.code==='Space'&&player.car&&player.car.bmx){ BMXK.hop=true; e.preventDefault(); } if(e.code==='KeyQ'&&player.car&&player.car.bmx) BMXK.wh=true; });
+addEventListener('keyup',e=>{ if(e.code==='KeyQ') BMXK.wh=false; });
+const isBike=c=>c&&(c.type==='bike'||c.vtype==='bike');
+const _ut27=updateTaxi; updateTaxi=function(dt){ const c=player.car; const pv=c?c.v:0; _ut27(dt);
+ if(isBike(c)&&!RIDE27.on){ const fw=!D.active&&(keys.KeyW||keys.ArrowUp||mob.u), bk=!D.active&&(keys.KeyS||keys.ArrowDown||mob.d); const vmax=c.bmx?11:9.5; c.vmax2=vmax;
+  let v=pv; if(fw) v=Math.min(vmax,Math.max(0,v)+(v<4?2.6:1.5)*dt); else if(bk) v=Math.max(0,v-5.5*dt); else v=v*Math.exp(-dt*0.35); if(D.active) v*=Math.exp(-dt*3); c.v=v; }
+ if(c&&c.bmx){ const q=cityClamp(c.x,c.z); if(!player.zone){ c.x=q[0]; c.z=q[1]; } bmxTricks(c,dt); }
+ updateBMXRiders(dt); updateBuddies(dt); };
+function bmxTricks(c,dt){ c.jy=c.jy||0; c.jvy=c.jvy||0; c.spin=c.spin||0; c.wh=c.wh||0; const onRamp=BMXS.some(b=>Math.hypot(c.x-b.rx,c.z-b.z0)<1.2);
+ if(c.jy<=0.001&&(BMXK.hop||(onRamp&&c.v>3.5&&!c._ramp))){ c.jvy=onRamp?5.2:4.0; c.spin=c.v>5?1:0; c._ramp=onRamp; c._air=0; sfxBeep(true); }
+ BMXK.hop=false; if(!onRamp) c._ramp=false;
+ if(c.jy>0||c.jvy>0){ c.jvy-=12*dt; c.jy=Math.max(0,c.jy+c.jvy*dt); c._air+=dt; if(c.jy<=0){ c.jvy=0; const tr=c.spin?'🌀 360 bunny hop!':'🦘 Bunny hop!'; trickDone(tr,c.spin?12:6); c.spin=0; } }
+ c.wh=lerp(c.wh,BMXK.wh&&c.v>1.2&&c.jy<=0?0.55:0,Math.min(1,dt*6)); if(BMXK.wh&&c.v>1.2){ c._whT=(c._whT||0)+dt; if(c._whT>2&&!c._whDone){ c._whDone=true; trickDone('🤸 Wheelie (2 sn)!',8); } } else { c._whT=0; c._whDone=false; }
+ c.seatY=0.42+c.jy; c.g.position.y=c.jy; c.g.rotation.order='YXZ'; c.g.rotation.z=c.wh; if(c.spin&&c.jy>0){ c.g.rotation.y=c.h+Math.min(1,c._air/0.75)*Math.PI*2; } }
+function trickDone(t,xp){ S.bmxTricks=(S.bmxTricks||0)+1; S.xp+=xp; updateHUD(); save(); checkBadges(); toast(t+' <b>+'+xp+' XP</b>',1300); }
+const _up6_27=updateP6; updateP6=function(dt){ _up6_27(dt); const c=player.car; const hud=$('bikeHud');
+ if(isBike(c)){ const kmh=Math.round(c.v*3.6); hud.style.display='block'; hud.innerHTML=(c.bmx?'🚲 BMX':'🚲 Bisiklet')+' · <b>'+kmh+' km/s</b> <small>(W/↑ hızlan · S/↓ yavaşla · E in'+(c.bmx?' · BOŞLUK zıpla · Q wheelie':'')+')</small><div class="bar"><i style="width:'+Math.min(100,c.v/(c.vmax2||10)*100)+'%"></i></div>';
+  const h=player.h; if(c.bmx){ h.g.position.y=c.seatY; h.g.rotation.order='YXZ'; h.g.rotation.x=-c.wh*0.6; if(c.spin&&c.jy>0) h.g.rotation.y=c.g.rotation.y+Math.PI/2; } }
+ else hud.style.display='none';
+ $('bmxBtns').style.display=(c&&c.bmx&&(matchMedia('(pointer:coarse)').matches||S.touch))?'flex':'none'; };
+
+// ---------- 4) BMX AKROBATLARI (her ~200-300 m'de bir) + yedek BMX
+const BMXS=[];
+function bmxSpot(x0,z0,dirZ,col){ const v=makeVehicle('bike',col); const n=addNPC({role:R('BMX akrobatı','BMX rider','🚲'),ctx:'casual',sc:'bmx',x:x0,z:z0,y:0.42,yaw:Math.PI/2,av:'🚲',look:{female:Math.random()<.35,shirt:pick([0xff6f00,0x00bcd4,0x8bc34a,0xe91e63]),longSleeve:false},outdoor:true});
+ n.noCrowd=true; n.noRain=true; const hel=new THREE.Mesh(new THREE.SphereGeometry(0.15,12,8,0,Math.PI*2,0,Math.PI*0.55),M(0x212121)); hel.position.y=0.07; n.h.head.add(hel);
+ const rx=x0+3; const ramp=box(1.4,0.45,1.2,M(0x8d6e63),rx,0.18,z0,null,false); ramp.rotation.z=0.33; ramp.position.y=0.12; const rp2=box(1.5,0.06,1.25,M(0xffb300),rx,0.37,z0,null,false); rp2.rotation.z=0.33;
+ const spare=addJobVeh('bike',pick([0x111111,0xd50000,0x2962ff]),x0-1.5,z0+(dirZ||1)*1.3,0,{vmax2:11,turnK:3,label:'🚲 BMX',act:'🚲 BMX\'e bin (E)',zLim:[-1e4,1e4],rad:0.45,locked:true,showRider:true,seatY:0.42,bmx:true});
+ const s={n,v,x0,z0,rx,x:x0-3,dir:1,t:rnd(1,3),trick:null,tt:0,jy:0,jvy:0,wh:0,spin:0,spare}; BMXS.push(s);
+ tourists(x0,z0+(dirZ||1)*2.6,2,'watching the BMX tricks','BMX hareketlerini izlemeyi'); return s; }
+[[-100,-8.7,-1,0xff1744],[ 95,-8.7,-1,0x00e676],[226,8.9,1,0xffea00],[470,-80,1,0x2979ff],[600,-79,1,0xd500f9]].forEach(a=>bmxSpot(a[0],a[1],a[2],a[3]));
+function updateBMXRiders(dt){ for(const s of BMXS){ const n=s.n; const talk=n.state==='talking'||n.state==='listen';
+  if(talk){ n.home.x=n.x=s.x; n.home.z=n.z=s.z0+0.9; n.y=0; n.home.anim='idle'; n.tilt=0; s.v.g.position.set(s.x,0,s.z0); s.v.g.rotation.set(0,s.dir>0?0:Math.PI,0); continue; }
+  s.t-=dt; if(!s.trick&&s.t<=0){ s.trick=pick(['wheelie','hop','360','manual','hop']); s.tt=s.trick==='wheelie'||s.trick==='manual'?1.8:0; if(s.trick==='hop'||s.trick==='360'){ s.jvy=s.trick==='360'?5:3.8; } }
+  s.x+=s.dir*3.2*dt; if(s.x>s.x0+4.5){ s.dir=-1; } if(s.x<s.x0-4.5){ s.dir=1; }
+  const h=s.dir>0?0:Math.PI; let spinA=0;
+  if(s.jvy>0||s.jy>0){ s.jvy-=12*dt; s.jy=Math.max(0,s.jy+s.jvy*dt); if(s.trick==='360') spinA=(1-Math.max(0,s.jvy+5)/10)*Math.PI*2; if(s.jy<=0){ s.jvy=0; s.trick=null; s.t=rnd(1.5,3.5); } }
+  if(s.tt>0){ s.tt-=dt; s.wh=lerp(s.wh,s.trick==='manual'?-0.25:0.55,Math.min(1,dt*6)); if(s.tt<=0){ s.trick=null; s.t=rnd(1.5,3.5); } } else s.wh=lerp(s.wh,0,Math.min(1,dt*6));
+  s.v.g.position.set(s.x,s.jy,s.z0); s.v.g.rotation.order='YXZ'; s.v.g.rotation.set(0,h+spinA,s.wh*(s.dir>0?1:1));
+  const fx=Math.cos(h+spinA), fz=-Math.sin(h+spinA); n.home.x=n.x=s.x-0.15*fx; n.home.z=n.z=s.z0-0.15*fz; n.y=0.42+s.jy; n.home.yaw=n.yaw=h+spinA+Math.PI/2; n.home.anim='ride'; n.tilt=-s.wh*0.7; n.sitting=false; } }
+const _exA27=extraAct; extraAct=function(a,n,v,P){ if(a==='bmxGive'){ const s=BMXS.find(b=>b.n===n)||BMXS[0]; s.spare.locked=false; BMXS.pendGive=s.spare; return 0.4; }
+ if(a==='balloonLic'){ S.balloonLic=true; save(); checkBadges(); return 0.5; } if(a==='balloonRideGo'){ BAL.pend='pilot'; return 0.4; } return _exA27(a,n,v,P); };
+const _ead27=extraAfterDialog; extraAfterDialog=function(sc,n){ _ead27(sc,n);
+ if(sc==='bmx'&&BMXS.pendGive&&!D.closed){ const b=BMXS.pendGive; BMXS.pendGive=null; setTimeout(()=>{ if(player.car) return; player.x=b.x; player.z=b.z+0.6; enterVeh(b); toast('🚲 BMX\'tesin! W/↑ hızlan · S/↓ yavaşla · <b>BOŞLUK</b> zıpla (hızlıysan 360!) · <b>Q</b> wheelie · rampadan atla! · E: in',6000); },400); }
+ if(sc==='balloonLic'||sc==='balloonCourse'){ if(S.balloonLic&&!D.closed) setTimeout(()=>askConfirm('Ready for your first flight, Captain?','İlk uçuşuna hazır mısın Kaptan?',[['🎈 Yes, let\'s fly!','Evet, uçalım! (tek başına)',()=>startBalloon('self',false)],['🧳 Fly with two tourists','İki turistle uç (uçuş ücreti kazan)',()=>startBalloon('self',true)],['⏳ Later','Sonra',null]]),500); }
+ if(sc==='balloonRide'){ if(BAL.pend==='pilot'&&!D.closed){ BAL.pend=null; setTimeout(()=>startBalloon('pilot',true),500); } BAL.pend=null; } };
+
+// ---------- 5) SÜRERKEN SOHBET: bisikletli arkadaşlar
+const BUDS=[]; const RIDE27={on:false,b:null};
+function buddy(name,en,x1,x2,zA,zB,col,female){ const v=makeVehicle('bike',col); const n=addNPC({role:R(name,en,'🚴'),ctx:'casual',sc:'rideChat',x:x1+5,z:zA,y:0.42,yaw:Math.PI/2,av:'🚴',look:{female,shirt:pick([0x03a9f4,0xff5722,0x9c27b0]),longSleeve:false},outdoor:true}); n.noCrowd=true; n.noRain=true; n.talkAnim='ride';
+ const hel=new THREE.Mesh(new THREE.SphereGeometry(0.15,12,8,0,Math.PI*2,0,Math.PI*0.55),M(0xeeeeee)); hel.position.y=0.07; n.h.head.add(hel);
+ const b={n,v,x:x1+5+Math.random()*(x2-x1-10),x1,x2,zA,zB,dir:1,sp:4.2}; BUDS.push(b); return b; }
+buddy('Bisikletli Zeynep','Cyclist Zeynep',138,260,8.3,9.5,0x00bfa5,true); buddy('Bisikletli Emre','Cyclist Emre',-118,120,-8.2,-9.4,0xff6d00,false);
+function updateBuddies(dt){ const P=player, c=P.car; RIDE27.on=!!(RIDE27.b&&D.active&&D.npc===RIDE27.b.n&&isBike(c));
+ for(const b of BUDS){ const n=b.n; const talkFoot=(n.state==='talking'||n.state==='listen')&&!RIDE27.on; const sp=talkFoot?0:(RIDE27.on&&RIDE27.b===b?4.2:b.sp);
+  b.x+=b.dir*sp*dt; if(b.x>b.x2){ b.dir=-1; } if(b.x<b.x1){ b.dir=1; } const z=b.dir>0?b.zA:b.zB; b.z=b.z===undefined?z:lerp(b.z,z,Math.min(1,dt*1.5)); const h=b.dir>0?0:Math.PI;
+  b.v.g.position.set(b.x,0,b.z); b.v.g.rotation.set(0,h,0); if(typeof spinWheels==='function') spinWheels({...b.v,v:sp},dt);
+  const fx=Math.cos(h); n.home.x=n.x=b.x-0.15*fx; n.home.z=n.z=b.z; n.y=0.42; n.home.yaw=n.yaw=h+Math.PI/2; n.home.anim='ride'; n.sitting=true; n.tilt=0; b.h=h; }
+ if(RIDE27.on){ const b=RIDE27.b; const side=b.dir>0?1:-1; c.x=b.x-b.dir*0.4; c.z=b.z+side*1.15*(b.zA>0?-1:1); c.h=b.h; c.v=4.2; c.g.position.set(c.x,0,c.z); c.g.rotation.y=c.h; P.x=c.x; P.z=c.z; } }
+const _ea27=extraActions; extraActions=function(items){ _ea27(items); const P=player; if(D.active) return; const c=P.car;
+ if(isBike(c)){ const b=BUDS.find(b=>Math.hypot(b.x-c.x,b.z-c.z)<6); if(b) items.unshift(['💬 '+b.n.role.tr.replace('Bisikletli ','')+' ile sürerken sohbet et','rideTalk']); }
+ if(!c&&!P.zone){ const s=BMXS.find(s=>Math.hypot(s.spare.x-P.x,s.spare.z-P.z)<2.5&&s.spare.locked); if(s) items.push(['🚲 BMX\'i denemek için akrobatla konuş','talkBmx']); }
+ if(P.zone===CAP&&!BAL.on){ if(Math.hypot(P.x-PADB.x,P.z-PADB.z)<9) items.unshift(S.balloonLic?['🎈 Balonunu uçur (pilot sensin)','balFly']:['🎓 Önce pilotluk kursu al (Ayşe Kaptan)','balNeedLic']); }
+ if(BAL.on){ items.length=0; const gr=BAL.y<0.6&&BAL.t>6; items.push([gr?'🧺 Sepetten in':'🏁 Uçuşu bitir (kara ekip toplasın)','balEnd']); if(BAL.mode==='self') items.push(['🔥 Brülör (W/↑ basılı tut)','balBurn'],['🪂 Valf (S/↓)','balVent']); } };
+const _eak27=extraActionKey; extraActionKey=function(k){ if(k==='rideTalk'){ const c=player.car; const b=BUDS.find(b=>Math.hypot(b.x-c.x,b.z-c.z)<6); if(b){ RIDE27.b=b; startDialog(b.n,'npc','rideChat'); } return; }
+ if(k==='talkBmx'){ const s=BMXS.find(s=>Math.hypot(s.spare.x-player.x,s.spare.z-player.z)<2.5); if(s) startDialog(s.n,'npc','bmx'); return; }
+ if(k==='balFly') return askConfirm('Fly alone or with tourists?','Tek başına mı, turistlerle mi uçacaksın?',[['🎈 Alone','Tek başıma',()=>startBalloon('self',false)],['🧳 With two tourists','İki turistle (uçuş ücreti kazan)',()=>startBalloon('self',true)]]);
+ if(k==='balNeedLic'){ toast('🎓 Ofisteki <b>Ayşe Kaptan</b> ile konuş: pilotluk kursu 600 ₺.',3000); return; }
+ if(k==='balEnd') return endBalloon(); if(k==='balBurn'){ BAL.btnBurn=1.2; return; } if(k==='balVent'){ BAL.btnVent=1.0; return; } return _eak27(k); };
+const _cs27=chooseScenario; chooseScenario=function(n){ if(n===AYSE) return S.balloonLic?'balloonPax':'balloonCourse'; return _cs27(n); };
+
+// ---------- 6) KAPADOKYA BALON VADİSİ
+const CAP=ZONES.cap; const PADB={x:-205,z:-72};
+(function(){ const tuff=ctex(256,256,(g,w,h)=>{ g.fillStyle='#d9b583'; g.fillRect(0,0,w,h); for(let i=0;i<500;i++){ g.fillStyle=`rgba(${150+Math.random()*60|0},${110+Math.random()*50|0},${70+Math.random()*30|0},.35)`; g.fillRect(Math.random()*w,Math.random()*h,rnd(2,8),rnd(1,3)); } },[30,24]);
+ const gr=new THREE.Mesh(geoPlane,new THREE.MeshStandardMaterial({map:tuff,roughness:1})); gr.scale.set(CAP.x2-CAP.x1+40,CAP.z2-CAP.z1+40,1); gr.rotation.x=-Math.PI/2; gr.position.set((CAP.x1+CAP.x2)/2,0.03,(CAP.z1+CAP.z2)/2); gr.receiveShadow=true; scene.add(gr);
+ const field=new THREE.Mesh(geoPlane,new THREE.MeshStandardMaterial({color:0x9fae6a,roughness:1})); field.scale.set(60,40,1); field.rotation.x=-Math.PI/2; field.position.set(PADB.x,0.04,PADB.z); scene.add(field); })();
+const CHIM=[]; const tuffM=M(0xd8b07a,{roughness:1}), tuffM2=M(0xc99a63,{roughness:1}), capM=M(0x5d4637,{roughness:.9}), doorM=M(0x3e2a1c);
+function chimney(x,z,h,r){ const g=new THREE.Group(); g.position.set(x,0,z); scene.add(g); const m=new THREE.Mesh(new THREE.CylinderGeometry(r*0.42,r,h,9),Math.random()<.5?tuffM:tuffM2); m.position.y=h/2; m.castShadow=true; g.add(m);
+ const neck=new THREE.Mesh(new THREE.CylinderGeometry(r*0.3,r*0.42,h*0.12,8),tuffM); neck.position.y=h+h*0.06; g.add(neck); const cp=new THREE.Mesh(new THREE.ConeGeometry(r*0.75,h*0.16,9),capM); cp.position.y=h*1.2; cp.castShadow=true; g.add(cp);
+ if(Math.random()<0.45){ for(let i=0;i<rnd(1,4)|0;i++){ const a=rnd(0,6.28), y=rnd(1.5,h*0.6); const rr=r*(1-y/h*0.58)+0.02; const d=new THREE.Mesh(geoPlane,doorM); d.scale.set(0.7,i?0.6:1.4,1); d.position.set(Math.sin(a)*rr,i?y:0.75,Math.cos(a)*rr); d.rotation.y=a; g.add(d); } }
+ addCol(x-r*0.8,z-r*0.8,x+r*0.8,z+r*0.8); CHIM.push({x,z,h:h*1.3,r}); }
+(function(){ let k=0; for(let i=0;i<600&&k<90;i++){ const x=rnd(CAP.x1+8,CAP.x2-8), z=rnd(CAP.z1+8,CAP.z2-8); if(Math.hypot(x-PADB.x,z-PADB.z)<36||Math.hypot(x+186,z+52)<18) continue; if(CHIM.some(c=>Math.hypot(c.x-x,c.z-z)<c.r+5)) continue; const cl=Math.random()<.35; chimney(x,z,rnd(7,cl?14:24),rnd(1.6,3.4)); k++; }
+ for(let i=0;i<10;i++){ const x=rnd(CAP.x1+10,CAP.x2-10), z=rnd(CAP.z1+10,CAP.z1+60); const m=new THREE.Mesh(new THREE.SphereGeometry(rnd(14,26),12,8,0,Math.PI*2,0,Math.PI/2),tuffM2); m.scale.y=rnd(0.4,0.8); m.position.set(x,0,z); scene.add(m); }
+ for(let i=0;i<18;i++){ const x=rnd(CAP.x1+10,CAP.x2-10), z=rnd(CAP.z1+10,CAP.z2-10); if(Math.hypot(x-PADB.x,z-PADB.z)<32) continue; const t=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.2,1.8,6),M(0x6d4c41)); t.position.set(x,0.9,z); scene.add(t); const cr=new THREE.Mesh(new THREE.SphereGeometry(1.3,8,6),M(0x7cb342)); cr.position.set(x,2.4,z); scene.add(cr); } })();
+// ofis
+(function(){ const x=-192,z=-44; box(12,4.5,7,tuffM2,x,2.25,z,null,true,true); addCol(x-6,z-3.5,x+6,z+3.5); box(12.4,0.4,7.4,capM,x,4.6,z,null,false); box(2,2.6,0.1,doorM,x,1.3,z-3.55,null,false);
+ const sg=new THREE.Mesh(geoPlane,new THREE.MeshStandardMaterial({map:texSign('KAPADOKYA BALON TURLARI','BALLOON TOURS · PILOT SCHOOL','#bf360c','#fff'),side:THREE.DoubleSide})); sg.scale.set(6,1.5,1); sg.position.set(x,3.6,z-3.62); scene.add(sg); })();
+const AYSE=addNPC({role:R('Balon pilotu eğitmeni Ayşe Kaptan','Balloon instructor Captain Ayşe','🎓'),ctx:'casual',sc:'balloonCourse',x:-189,z:-49.2,yaw:Math.PI,av:'🎓',look:{female:true,shirt:0xbf360c,longSleeve:true},outdoor:true}); AYSE.noCrowd=true; AYSE.noRain=true;
+const PILOT=addNPC({role:R('Balon pilotu Mehmet','Balloon pilot Mehmet','🎈'),ctx:'casual',sc:'balloonRide',x:PADB.x+6,z:PADB.z+4,yaw:Math.PI,av:'🎈',look:{female:false,shirt:0x1565c0,longSleeve:true,beard:true},outdoor:true}); PILOT.noCrowd=true; PILOT.noRain=true; PILOT.homeP={x:PADB.x+6,z:PADB.z+4};
+const BPAX=[0,1].map(i=>{ const n=addNPC({role:R('Balon turisti','Balloon tourist','📷'),ctx:'casual',sc:'balloonPax',x:PADB.x+9+i*1.2,z:PADB.z+6,yaw:Math.PI,anim:'film',look:{female:i===0,shirt:pick([0xffeb3b,0x4caf50,0xe91e63])},outdoor:true}); n.noCrowd=true; n.noRain=true; n.homeP={x:n.x,z:n.z}; return n; });
+for(const [x,z,k] of [[-200,-56,5],[-230,-60,4],[-176,-80,4],[-215,-95,3]]){ for(let i=0;i<k;i++){ const a=i/k*6.28; const n=addNPC({role:R('Turist (Kapadokya)','Tourist','📷'),ctx:'casual',sc:'capTourist',x:x+Math.cos(a)*rnd(1.5,3),z:z+Math.sin(a)*rnd(1.5,3),yaw:rnd(0,6.28),anim:i%2?'film':'idle',look:{female:Math.random()<.5,shirt:pick([0xe53935,0x1e88e5,0x43a047,0xfdd835,0x8e24aa,0xffffff])},outdoor:true}); n.noRain=true; } }
+vendor(-180,-58,Math.PI,'souvIst',R('Hediyelikçi (Kapadokya)','Souvenir seller','🏺'),'🏺'); stall(-180,-56.6,Math.PI,'#bf360c','HEDİYELİK · ÇÖMLEK','SOUVENIRS · POTTERY'); terrace(-170,-66,3,'cay','tea garden in the valley');
+// balon modeli
+const texGore=cols=>ctex(512,256,(g,w,h)=>{ const n=16; for(let i=0;i<n;i++){ g.fillStyle=cols[i%cols.length]; g.fillRect(i*w/n,0,w/n+1,h); } g.fillStyle='rgba(255,255,255,.35)'; g.fillRect(0,h*0.48,w,6); });
+const BCOLS=[['#e53935','#fdd835','#1e88e5'],['#8e24aa','#ff7043'],['#43a047','#ffffff','#e53935'],['#ff9800','#3949ab'],['#00acc1','#ffeb3b','#d81b60'],['#6d4c41','#ffca28'],['#ffffff','#e53935'],['#1e88e5','#ffffff']];
+const flameTex=ctex(64,64,(g,w,h)=>{ const gr=g.createRadialGradient(32,40,2,32,36,30); gr.addColorStop(0,'rgba(255,255,220,1)'); gr.addColorStop(0.35,'rgba(255,170,40,.9)'); gr.addColorStop(1,'rgba(255,60,0,0)'); g.fillStyle=gr; g.fillRect(0,0,w,h); });
+function balloonMesh(ci){ const g=new THREE.Group(); scene.add(g); const env=new THREE.Mesh(new THREE.SphereGeometry(7,24,16),new THREE.MeshStandardMaterial({map:texGore(BCOLS[ci%BCOLS.length]),roughness:.75})); env.scale.set(1,1.18,1); env.position.y=14; env.castShadow=true; g.add(env);
+ const sk=new THREE.Mesh(new THREE.CylinderGeometry(2.6,1.2,4,16,1,true),new THREE.MeshStandardMaterial({color:0x333333,side:THREE.DoubleSide})); sk.position.y=6.6; g.add(sk);
+ const bk=new THREE.Mesh(geoBox,M(0x8d6e3f,{roughness:1})); bk.scale.set(1.7,1.05,1.7); bk.position.y=0.53; bk.castShadow=true; g.add(bk); const rim=new THREE.Mesh(geoBox,M(0x5d4037)); rim.scale.set(1.8,0.12,1.8); rim.position.y=1.08; g.add(rim);
+ for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]]){ const lg=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(sx*0.8,1.1,sz*0.8),new THREE.Vector3(sx*1.25,4.3,sz*1.25),new THREE.Vector3(sx*2.4,7.8,sz*2.4)]); g.add(new THREE.Line(lg,new THREE.LineBasicMaterial({color:0x222222}))); }
+ const bu=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.25,0.4,10),M(0x9e9e9e,{metalness:.8,roughness:.3})); bu.position.y=4.3; g.add(bu); const fl=new THREE.Sprite(new THREE.SpriteMaterial({map:flameTex,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending})); fl.scale.set(1.6,3,1); fl.position.y=5.4; fl.visible=false; g.add(fl);
+ g.userData.flame=fl; return g; }
+// süs balonları: rüzgâr katmanlarıyla süzülür
+function windAt(y){ const L=[[0,25,1.2],[35,115,2.6],[90,215,3.6],[160,300,4.6]]; let a=L[0]; for(const l of L){ if(y>=l[0]) a=l; } const k=0.7+W.cur.wind*0.9; const d=a[1]*Math.PI/180; return [Math.sin(d)*a[2]*k,Math.cos(d)*a[2]*k,a[1],a[2]*k]; }
+const AMBB=[]; for(let i=0;i<14;i++){ const g=balloonMesh(i+1); const b={g,x:rnd(CAP.x1+20,CAP.x2-20),z:rnd(CAP.z1+20,CAP.z2-20),y:rnd(25,180),vy:0,ty:rnd(30,200),t:rnd(0,20)}; AMBB.push(b); }
+function updateAmbBalloons(dt){ const vis=player.zone===CAP||Math.hypot(player.x-CAP.x2,player.z-(CAP.z1+CAP.z2)/2)<260; for(const b of AMBB){ b.g.visible=vis&&dayF>0.15; if(!b.g.visible) continue; b.t-=dt; if(b.t<=0){ b.t=rnd(15,40); b.ty=rnd(20,210); }
+  b.vy=lerp(b.vy,clamp((b.ty-b.y)*0.05,-1.2,1.4),dt*0.5); b.y=Math.max(0,b.y+b.vy*dt); const w=windAt(b.y); b.x+=w[0]*dt; b.z+=w[1]*dt;
+  if(b.x<CAP.x1-30||b.x>CAP.x2+30||b.z<CAP.z1-30||b.z>CAP.z2+30){ b.x=rnd(CAP.x1+20,CAP.x2-20); b.z=rnd(CAP.z1+20,CAP.z2-20); b.y=0; b.ty=rnd(40,180); }
+  b.g.position.set(b.x,b.y,b.z); b.g.userData.flame.visible=b.vy>0.4&&Math.sin(T*3+b.x)>0.3; } }
+// oyuncunun balonu
+const BAL={on:false,mode:null,g:balloonMesh(0),x:PADB.x,z:PADB.z,y:0,vy:0,heat:0.42,t:0,pax:[],burnT:0,btnBurn:0,btnVent:0,tour:false,maxY:0};
+BAL.g.position.set(PADB.x,0,PADB.z);
+_el('div','balHud'); _el('div','balBtns'); (function(){ const s=document.createElement('style'); s.textContent='#balHud{position:fixed;left:12px;top:120px;background:rgba(10,20,40,.78);color:#fff;border-radius:14px;padding:10px 12px;font-size:13px;z-index:16;display:none;min-width:190px;line-height:1.45}#balHud b{color:#ffd54f}#balHud .hb{height:8px;background:#334;border-radius:4px;overflow:hidden}#balHud .hb i{display:block;height:100%;background:linear-gradient(90deg,#42a5f5,#ffca28,#f4511e)}#balHud .arr{display:inline-block;font-size:18px}#balBtns{position:fixed;right:12px;bottom:150px;display:none;flex-direction:column;gap:10px;z-index:18}#balBtns button{width:76px;height:76px;border-radius:50%;border:2px solid #fff;color:#fff;font-weight:900;font-size:13px}#balBurnB{background:rgba(244,81,30,.9)}#balVentB{background:rgba(30,136,229,.9)}'; document.head.appendChild(s); })();
+$('balBtns').innerHTML='<button id="balBurnB">🔥<br>Brülör</button><button id="balVentB">🪂<br>Valf</button>';
+const holdB=(id,key)=>{ const el=$(id); el.addEventListener('pointerdown',e=>{ e.preventDefault(); BAL[key]=99; }); ['pointerup','pointerleave','pointercancel'].forEach(k=>el.addEventListener(k,()=>{ BAL[key]=0; })); }; holdB('balBurnB','btnBurn'); holdB('balVentB','btnVent');
+function startBalloon(mode,tour){ if(BAL.on) return; fadeScreen(()=>{ BAL.on=true; BAL.mode=mode; BAL.tour=tour; BAL.x=PADB.x; BAL.z=PADB.z; BAL.y=0; BAL.vy=0; BAL.heat=0.45; BAL.t=0; BAL.maxY=0; BAL.pax=[];
+  if(mode==='pilot') BAL.pax.push(PILOT); if(tour) BAL.pax.push(...BPAX); player.target=null; camS.dist=Math.max(camS.dist,11); camS._p26=0.25;
+  toast(mode==='pilot'?'🎈 Pilot Mehmet balonu ısıtıyor… Havalanıyoruz! Turistlerle sohbet edebilirsin.':'🎈 Pilot sensin! <b>W/↑ basılı</b> = brülör (yüksel) · <b>S/↓</b> = valf (alçal). Yön için farklı yükseklikteki rüzgârları kullan!',6000);
+  S.balloonFlights=(S.balloonFlights||0)+1; save(); checkBadges(); }); }
+function endBalloon(){ if(!BAL.on) return; const landed=BAL.y<0.6; const pay=BAL.mode==='self'&&BAL.tour&&landed&&BAL.maxY>30&&BAL.t>40; fadeScreen(()=>{ BAL.on=false; const P=player; P.seat=null; P.y=0; P.x=BAL.x+2.2; P.z=BAL.z+1.5; if(P.zone){ P.x=clamp(P.x,CAP.x1+1,CAP.x2-1); P.z=clamp(P.z,CAP.z1+1,CAP.z2-1); } const q=collide(P.x,P.z,0.4); P.x=q[0]; P.z=q[1];
+  BAL.pax.forEach(n=>{ n.y=0; n.x=n.home.x=n.homeP.x; n.z=n.home.z=n.homeP.z; n.home.anim=n===PILOT?'idle':'film'; n.sitting=false; }); BAL.pax=[]; BAL.g.userData.flame.visible=false;
+  BAL.x=PADB.x; BAL.z=PADB.z; BAL.y=0; BAL.g.position.set(BAL.x,0,BAL.z);
+  if(pay){ addMoney(400); S.balloonPilotJobs=(S.balloonPilotJobs||0)+1; save(); } toast(landed?('🥂 Güvenli iniş! Kapadokya geleneği: inişten sonra kutlama!'+(pay?' Turistler uçuş ücretini ödedi: <b>+400 ₺</b>':'')):'🚙 Kara ekibi balonu indirdi ve kalkış alanına geri getirdi.',4500); }); }
+function updateBalloon(dt){ updateAmbBalloons(dt); const hud=$('balHud'); if(!BAL.on){ hud.style.display='none'; $('balBtns').style.display='none'; return; }
+ BAL.t+=dt; const P=player; let burn=false, vent=false;
+ if(BAL.mode==='self'){ burn=!D.active&&!!(keys.KeyW||keys.ArrowUp||mob.u||BAL.btnBurn>0); vent=!D.active&&!!(keys.KeyS||keys.ArrowDown||mob.d||BAL.btnVent>0); if(BAL.btnBurn>0&&BAL.btnBurn<99) BAL.btnBurn-=dt; if(BAL.btnVent>0&&BAL.btnVent<99) BAL.btnVent-=dt; }
+ else { const ty=BAL.t<15?55:BAL.t<70?135:BAL.t<120?75:BAL.t<150?30:0; if(BAL.y<ty-4&&BAL.vy<1.2) burn=true; if(BAL.y>ty+6&&BAL.vy>-1.0) vent=true; if(BAL.t>150&&BAL.y<1&&BAL.t>160){ BAL.done=true; } }
+ BAL.heat=clamp(BAL.heat+(burn?0.3:0)*dt-(vent?0.32:0)*dt-0.025*dt,0,1); const lift=(BAL.heat-0.47)*9; BAL.vy+= (lift-BAL.vy*0.5)*dt; BAL.y+=BAL.vy*dt; if(BAL.y<=0){ BAL.y=0; if(BAL.vy<-3.2&&!BAL.hard){ BAL.hard=true; toast('💥 Sert iniş! Biraz daha yavaş alçal (valfi az kullan).',2500); } BAL.vy=Math.max(0,BAL.vy); } else BAL.hard=false; BAL.y=Math.min(BAL.y,320); BAL.maxY=Math.max(BAL.maxY,BAL.y);
+ const w=windAt(BAL.y); const air=BAL.y>0.6; BAL.x+=(air?w[0]:0)*dt; BAL.z+=(air?w[1]:0)*dt;
+ if(BAL.x<CAP.x1+6||BAL.x>CAP.x2-6||BAL.z<CAP.z1+6||BAL.z>CAP.z2-6){ BAL.x=clamp(BAL.x,CAP.x1+6,CAP.x2-6); BAL.z=clamp(BAL.z,CAP.z1+6,CAP.z2-6); if(!BAL.edgeT||T>BAL.edgeT){ BAL.edgeT=T+5; toast('🧭 Vadi sınırı — başka yöne esen rüzgârı bulmak için yüksel ya da alçal.',2500); } }
+ for(const c of CHIM){ if(BAL.y<c.h){ const d=Math.hypot(BAL.x-c.x,BAL.z-c.z); if(d<c.r+1.4){ const k=(c.r+1.4)/Math.max(0.01,d); BAL.x=c.x+(BAL.x-c.x)*k; BAL.z=c.z+(BAL.z-c.z)*k; } } }
+ const fl=BAL.g.userData.flame; fl.visible=burn&&Math.random()<0.9; fl.scale.set(1.4+Math.random()*0.5,2.6+Math.random(),1); if(burn){ BAL.burnT-=dt; if(BAL.burnT<=0){ BAL.burnT=0.22; if(AC&&!S.mute&&AC._noise){ try{ const b=AC.createBufferSource(); b.buffer=AC._noise; const f=AC.createBiquadFilter(); f.type='lowpass'; f.frequency.value=600; const g=AC.createGain(); g.gain.value=0.12*(S.vol||0.8); b.connect(f); f.connect(g); g.connect(AC.destination); b.start(); b.stop(AC.currentTime+0.25); }catch(e){} } } }
+ BAL.g.position.set(BAL.x,BAL.y,BAL.z); BAL.g.rotation.y+=dt*0.03;
+ // sepettekiler
+ const ry=BAL.g.rotation.y; const spots=[[0.45,0.45],[-0.45,0.45],[0.45,-0.45],[-0.45,-0.45]];
+ BAL.pax.forEach((n,i)=>{ const s=spots[i+1]; const c=Math.cos(ry), sn=Math.sin(ry); n.x=n.home.x=BAL.x+s[0]*c+s[1]*sn; n.z=n.home.z=BAL.z-s[0]*sn+s[1]*c; n.y=BAL.y+0.12; if(n.state!=='talking'&&n.state!=='listen') n.state='static'; n.home.anim=n===PILOT?'idle':(i%2?'film':'idle'); n.sitting=false; n.home.yaw=ry+(i%2?Math.PI*0.5:-Math.PI*0.4); });
+ // HUD
+ const arrow='⬆↗➡↘⬇↙⬅↖'[Math.round(((w[2]%360)/45))%8]; const card=['K','KD','D','GD','G','GB','B','KB'][Math.round(((w[2]%360)/45))%8];
+ hud.style.display='block'; hud.innerHTML=`🎈 <b>${BAL.mode==='pilot'?'Pilot Mehmet uçuruyor':'Pilot: sen'}</b><br>⛰️ İrtifa: <b>${BAL.y.toFixed(0)} m</b> · ${BAL.vy>0.15?'⬆️':BAL.vy<-0.15?'⬇️':'⏸️'} ${BAL.vy.toFixed(1)} m/s<br>🔥 Isı<div class="hb"><i style="width:${(BAL.heat*100).toFixed(0)}%"></i></div>💨 Rüzgâr: <span class="arr">${arrow}</span> ${card}, ${(w[3]*3.6).toFixed(0)} km/s<br><small style="opacity:.8">Katmanlar: 0–35 m K · 35–90 m GD · 90–160 m GB · 160 m+ B</small>`;
+ $('balBtns').style.display=BAL.mode==='self'&&(matchMedia('(pointer:coarse)').matches||S.touch)?'flex':'none';
+ if(BAL.mode==='pilot'&&BAL.done&&!BAL.doneTold){ BAL.doneTold=true; toast('🥂 Pilot Mehmet: "We have landed! Welcome back to earth!" — sepetten inmek için düğmeye bas.',4500); sayEn('We have landed! Welcome back to earth!'); }
+ if(BAL.t<1){ BAL.done=false; BAL.doneTold=false; } }
+const _up27b=updatePlayer; updatePlayer=function(dt){ const P=player; if(BAL.on){ P.seat={x:BAL.x-0.35,z:BAL.z-0.35,yaw:BAL.g.rotation.y,boat:1}; P.target=null; }
+ _up27b(dt); if(BAL.on){ P.x=BAL.x-0.35; P.z=BAL.z-0.35; P.y=BAL.y+0.12; P.h.g.position.set(P.x,P.y,P.z); P.h.anim='idle'; animHuman(P.h,0); } };
+const _col27=collide; collide=function(x,z,r){ if(BAL.on) return [x,z]; return _col27(x,z,r); };
+const _up6_27b=updateP6; updateP6=function(dt){ _up6_27b(dt); updateBalloon(dt); };
+const _fa27=fpvActive; fpvActive=function(){ if(BAL.on) return S.fpv&&!D.active; return _fa27(); };
+BADGES.push(['bmx','🚲','BMX akrobatı',()=>(S.bmxTricks||0)>=5],['balloon','🎈','Balon yolcusu',()=>(S.balloonFlights||0)>=1],['balpilot','🧑‍✈️','Balon pilotu',()=>!!S.balloonLic]);
+
+// ================= v25: EĞİTMEN OFİSLERİ (konteyner ofisler) · yön tuşları + ekran tuşları + fareyle sürüş =================
+// ---------- konteyner ofis
+const texCorr=col=>ctex(256,128,(g,w,h)=>{ g.fillStyle=col; g.fillRect(0,0,w,h); for(let i=0;i<32;i++){ g.fillStyle=i%2?'rgba(0,0,0,.16)':'rgba(255,255,255,.10)'; g.fillRect(i*8,0,4,h); } g.fillStyle='rgba(0,0,0,.25)'; g.fillRect(0,0,w,5); g.fillRect(0,h-5,w,5); });
+const texBeacon=em=>ctex(128,128,(g,w,h)=>{ g.clearRect(0,0,w,h); g.fillStyle='rgba(255,255,255,.95)'; g.beginPath(); g.arc(64,64,58,0,7); g.fill(); g.lineWidth=7; g.strokeStyle='#ff6d00'; g.stroke(); g.font='68px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(em,64,70); });
+const OFFICES=[];
+function officeBox(o){ const {x,z,yaw,col,tr,en,em,npc}=o; const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=yaw; scene.add(g);
+ const cm=new THREE.MeshStandardMaterial({map:texCorr(col),roughness:.7,metalness:.25}); const L=6.1,Wd=2.45,H=2.6;
+ const B=(w,h,d,m,px,py,pz)=>{ const b=new THREE.Mesh(geoBox,m); b.scale.set(w,h,d); b.position.set(px,py,pz); b.castShadow=true; g.add(b); return b; };
+ B(L,H,0.1,cm,0,H/2,-Wd/2); B(0.1,H,Wd,cm,-L/2,H/2,0); B(0.1,H,Wd,cm,L/2,H/2,0); B(L+0.1,0.12,Wd+0.1,cm,0,H+0.06,0); B(L,0.1,Wd,M(0x6d6d6d),0,0.05,0);
+ B(1.5,H,0.1,cm,-L/2+0.75,H/2,Wd/2); B(1.5,H,0.1,cm,L/2-0.75,H/2,Wd/2); B(L-3,0.5,0.1,cm,0,H-0.25,Wd/2);
+ const gl=new THREE.Mesh(geoPlane,new THREE.MeshStandardMaterial({color:0xbfe3ff,transparent:true,opacity:.18,depthWrite:false,side:THREE.DoubleSide})); gl.scale.set(1.3,1.5,1); gl.position.set(-L/2+2.25,1.35,Wd/2); g.add(gl); const gl2=gl.clone(); gl2.position.x=L/2-2.25; g.add(gl2);
+ // içerisi: masa, sandalye, bilgisayar, poster
+ B(1.6,0.06,0.7,M(0xf5f5f5),0,0.76,-0.05); B(0.06,0.74,0.6,M(0x9e9e9e),-0.7,0.37,-0.05); B(0.06,0.74,0.6,M(0x9e9e9e),0.7,0.37,-0.05); B(1.5,0.5,0.04,M(col),0,0.5,0.28);
+ B(0.5,0.32,0.03,M(0x111111),0.45,1.0,-0.25); B(0.06,0.18,0.06,M(0x111111),0.45,0.85,-0.25); B(0.45,0.05,0.45,M(0x37474f),0,0.45,-0.75); B(0.45,0.5,0.05,M(0x37474f),0,0.72,-0.98);
+ const ps=new THREE.Mesh(geoPlane,new THREE.MeshBasicMaterial({map:texBeacon(em)})); ps.scale.set(0.8,0.8,1); ps.position.set(-1.6,1.6,-Wd/2+0.07); g.add(ps);
+ const lt=new THREE.PointLight(0xfff3e0,0.7,6); lt.position.set(0,2.3,0); g.add(lt);
+ // tabela ve uzaktan görünen işaret
+ const sg=new THREE.Mesh(geoPlane,new THREE.MeshStandardMaterial({map:texSign(tr,en,'#263238','#fff'),emissive:0xffffff,emissiveIntensity:.25,side:THREE.DoubleSide})); sg.material.emissiveMap=sg.material.map; sg.scale.set(5.6,1.4,1); sg.position.set(0,H+0.9,Wd/2-0.2); g.add(sg); B(0.08,0.8,0.08,M(0x444444),-2.4,H+0.4,Wd/2-0.25); B(0.08,0.8,0.08,M(0x444444),2.4,H+0.4,Wd/2-0.25);
+ const bc=new THREE.Sprite(new THREE.SpriteMaterial({map:texBeacon(em),depthTest:false,transparent:true})); bc.scale.set(2.2,2.2,1); bc.position.set(0,H+3.4,0); bc.renderOrder=5; g.add(bc);
+ const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.25,14,8,1,true),new THREE.MeshBasicMaterial({color:0xffb300,transparent:true,opacity:.22,depthWrite:false,blending:THREE.AdditiveBlending})); beam.position.set(0,H+9.5,0); g.add(beam);
+ // çarpışma (yerel → dünya)
+ const toW=(lx,lz)=>{ const c=Math.cos(yaw), s=Math.sin(yaw); return [x+lx*c+lz*s, z-lx*s+lz*c]; }; const col2=(x1,z1,x2,z2)=>{ const a=toW(x1,z1), b=toW(x2,z2); addCol(Math.min(a[0],b[0]),Math.min(a[1],b[1]),Math.max(a[0],b[0]),Math.max(a[1],b[1])); };
+ col2(-L/2-0.1,-Wd/2-0.1,L/2+0.1,-Wd/2+0.1); col2(-L/2-0.1,-Wd/2,-L/2+0.1,Wd/2); col2(L/2-0.1,-Wd/2,L/2+0.1,Wd/2); col2(-L/2,Wd/2-0.1,-L/2+1.5,Wd/2+0.1); col2(L/2-1.5,Wd/2-0.1,L/2,Wd/2+0.1); col2(-0.85,-0.45,0.85,0.35);
+ // eğitmeni masaya oturt
+ if(npc){ const p=toW(0,-0.62); npc.x=npc.home.x=p[0]; npc.z=npc.home.z=p[1]; npc.y=0; npc.yaw=npc.home.yaw=yaw; npc.home.anim='sit'; npc.sitting=true; npc.beh='static'; npc.state='static'; npc.office={x:p[0],z:p[1],yaw}; npc.noCrowd=true; }
+ const front=toW(0,Wd/2+1.0); const O={g,bc,beam,x,z,front,npc,tr,em,inside:toW(0,0.55)}; OFFICES.push(O); return O; }
+const OFF_DEF=[
+ {k:'elif',x:-52,z:-99,yaw:0,col:'#1565c0',tr:'UÇUŞ EĞİTMENİ OFİSİ',en:'FLIGHT INSTRUCTOR · Capt. Elif',em:'✈️',npc:()=>ELIF},
+ {k:'can',x:58,z:-99,yaw:0,col:'#2e7d32',tr:'DRONE EĞİTMENİ OFİSİ',en:'DRONE INSTRUCTOR · Can',em:'🛸',npc:()=>DRINS},
+ {k:'ece',x:200,z:-79.5,yaw:0,col:'#c62828',tr:'MOTOR SPORLARI KAYIT',en:'MOTORSPORT RECEPTION · Ece',em:'🎫',npc:()=>DESK},
+ {k:'burak',x:178,z:-95.5,yaw:0,col:'#ef6c00',tr:'GO-KART EĞİTMENİ',en:'GO-KART · Burak',em:'🏎️',npc:()=>BURAK},
+ {k:'selin',x:240,z:-79.5,yaw:0,col:'#37474f',tr:'FORMÜL PİT OFİSİ',en:'F1 PIT · Selin',em:'🏁',npc:()=>SELIN},
+ {k:'kaan',x:280,z:-79.5,yaw:0,col:'#212121',tr:'MOTOSİKLET EĞİTMENİ',en:'MOTORBIKE · Kaan',em:'🏍️',npc:()=>KAAN},
+ {k:'mert',x:160,z:-205.5,yaw:0,col:'#6a1b9a',tr:'DRİFT EĞİTMENİ',en:'DRIFT · Mert',em:'💨',npc:()=>MERT},
+ {k:'ayse',x:-174,z:-44,yaw:0,col:'#bf360c',tr:'BALON PİLOTLUĞU OKULU',en:'BALLOON SCHOOL · Capt. Ayşe',em:'🎈',npc:()=>AYSE}];
+const OFFK={}; OFF_DEF.forEach(d=>{ OFFK[d.k]=officeBox(Object.assign({},d,{npc:d.npc()})); });
+// eğitmen uçuş vb. için yerinden ayrıldıysa bir süre sonra ofisine dönsün
+function officeReturn(dt){ OFFICES.forEach(O=>{ const n=O.npc; if(!n||!n.office) return; O.bc.position.y=2.6+3.4+Math.sin(T*2+O.x)*0.25; O.beam.visible=player.zone?true:false;
+ if(n.state==='talking'||n.state==='listen'||DRIVE2.mode) return; if(Math.hypot(n.x-n.office.x,n.z-n.office.z)>0.3){ n._offT=(n._offT||0)+dt; if(n._offT>6){ n._offT=0; n.x=n.home.x=n.office.x; n.z=n.home.z=n.office.z; n.yaw=n.home.yaw=n.office.yaw; n.home.anim='sit'; n.sitting=true; n.state='static'; } } else n._offT=0; }); }
+// harita: eğitmen noktaları ofislerin önüne
+const _bp28=buildPOIs; buildPOIs=function(){ _bp28(); const rep=[['Kaptan Elif','elif'],['eğitmen Can','can'],['resepsiyon','ece'],['Burak','burak'],['Selin','selin'],['Kaan','kaan'],['Mert','mert'],['pilotluğu okulu','ayse']];
+ CM.pois.forEach(p=>{ const r=rep.find(r=>p.n.indexOf(r[0])>=0); if(r){ const O=OFFK[r[1]]; p.x=O.x; p.z=O.z; p.go=O.front; p.n=/\(/.test(p.n)?p.n.replace(/\(([^)]*)\)/,'— $1 ofisi'):p.n+' — ofis'; } }); };
+CM.pois.length=0;
+// bölgeye gelince nerede kimin olduğunu söyle
+let lastZone28=null;
+function zoneHint(){ const P=player; const k=P.zone?P.zk:null; if(k===lastZone28) return; lastZone28=k; if(!k) return;
+ const msg={air:'✈️ <b>Kaptan Elif</b> (mavi ofis) ve 🛸 <b>Drone eğitmeni Can</b> (yeşil ofis) konteyner ofislerinde seni bekliyor — üstlerindeki dönen işaretlere git.',moto:'🎫 Önce <b>Ece</b>\'nin kayıt ofisine (kırmızı), sonra 🏎️ <b>Burak</b> (go-kart), 🏁 <b>Selin</b> (formül), 🏍️ <b>Kaan</b> (motosiklet), 💨 <b>Mert</b> (drift) ofislerine git.',cap:'🎈 <b>Ayşe Kaptan</b> turuncu konteyner ofiste: pilotluk kursu oradan. Balon turu için kalkış alanındaki <b>Pilot Mehmet</b>.'}[k];
+ if(msg) setTimeout(()=>toast(msg,7000),900); }
+// ---------- sürüş: ekran tuşları her araçta görünsün + fareyle sürüş
+(function(){ const s=document.createElement('style'); s.textContent='body.drivepad #mob{display:block}#mdrv{position:fixed;pointer-events:none;z-index:30;display:none;width:84px;height:84px;margin:-42px 0 0 -42px;border:3px solid rgba(255,255,255,.8);border-radius:50%;box-shadow:0 0 0 3px rgba(0,0,0,.25)}#mdrvDot{position:fixed;pointer-events:none;z-index:31;display:none;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#ffb300;border:2px solid #fff}#mdrvTip{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);background:rgba(10,20,40,.75);color:#fff;font-size:12px;padding:5px 12px;border-radius:12px;z-index:16;display:none;pointer-events:none}'; document.head.appendChild(s); })();
+_el('div','mdrv'); _el('div','mdrvDot'); _el('div','mdrvTip');
+function mouseDriveMode(){ const m=DRIVE2.mode; if(m) return true; if(typeof BOAT!=='undefined'&&BOAT.cur&&BOAT.drive) return true; if(typeof BAL!=='undefined'&&BAL.on&&BAL.mode==='self') return true; return false; }
+function drivingAny(){ return !!(player.car||mouseDriveMode()); }
+const MDRV={on:false,id:null,x0:0,y0:0,set:{}};
+function mdrvApply(x,y){ const dx=(x-MDRV.x0)/70, dy=(MDRV.y0-y)/70; const s={u:dy>0.25?1:0,d:dy<-0.25?1:0,l:dx<-0.25?1:0,r:dx>0.25?1:0}; for(const k of ['u','d','l','r']){ if(s[k]) mob[k]=1; else if(MDRV.set[k]) mob[k]=0; } MDRV.set=s; const dot=$('mdrvDot'); dot.style.left=x+'px'; dot.style.top=y+'px'; }
+(function(){ const cv=renderer.domElement;
+ cv.addEventListener('pointerdown',e=>{ if(!mouseDriveMode()||D.active||e.button!==0||ptrs&&ptrs.size>1) return; e.stopImmediatePropagation(); MDRV.on=true; MDRV.id=e.pointerId; MDRV.x0=e.clientX; MDRV.y0=e.clientY; MDRV.set={}; const r=$('mdrv'); r.style.left=e.clientX+'px'; r.style.top=e.clientY+'px'; r.style.display='block'; $('mdrvDot').style.display='block'; mdrvApply(e.clientX,e.clientY); try{ cv.setPointerCapture(e.pointerId); }catch(_){} },true);
+ cv.addEventListener('pointermove',e=>{ if(!MDRV.on||e.pointerId!==MDRV.id) return; e.stopImmediatePropagation(); mdrvApply(e.clientX,e.clientY); },true);
+ const up=e=>{ if(!MDRV.on||e.pointerId!==MDRV.id) return; e.stopImmediatePropagation(); MDRV.on=false; for(const k of ['u','d','l','r']) if(MDRV.set[k]) mob[k]=0; MDRV.set={}; $('mdrv').style.display='none'; $('mdrvDot').style.display='none'; };
+ cv.addEventListener('pointerup',up,true); cv.addEventListener('pointercancel',up,true); })();
+let drvTipShown=false;
+const _up6_28=updateP6; updateP6=function(dt){ _up6_28(dt); officeReturn(dt); zoneHint();
+ const dr=drivingAny(); document.body.classList.toggle('drivepad',dr&&!D.active); const md=mouseDriveMode();
+ const tip=$('mdrvTip'); if(dr&&!D.active){ tip.style.display='block'; tip.textContent=md?'⌨️ W A S D / yön tuşları · 🖱️ ekrana basılı tut ve imleci kaydır (yukarı = gaz/yüksel, aşağı = fren/alçal, sağ-sol = yön) · ◀▲▼▶ ekran tuşları':'⌨️ W A S D / yön tuşları · 🖱️ gitmek istediğin yere tıkla · ◀▲▼▶ ekran tuşları'; } else tip.style.display='none';
+ if(!dr&&MDRV.on){ MDRV.on=false; for(const k of ['u','d','l','r']) if(MDRV.set[k]) mob[k]=0; $('mdrv').style.display='none'; $('mdrvDot').style.display='none'; } };
+
+// ================= v26: KAYKAY (bin/in, ollie, kayarken sohbet) · OTEL: oda servisi, temizlik, uyandırma, en üst katta Sky Restaurant kahvaltı · BMX daha belirgin =================
+// ---------- diyaloglar
+SC.skate={topic:'Konu: Kaykaycıyla tanış — kaykayın parçalarını, ollie\'yi sor; kaykayını ödünç al.',steps:[
+ N(["Hi! Do you skate?","Selam! Kaykay yapar mısın?"],["Hey! Do you skateboard?","Selam! Kaykay sürer misin?"],["Hey! Do you skate? This pavement is perfect for it!","Selam! Kaykay sürer misin? Bu kaldırım tam kaykaylık!"],["Hey there! Do you skate at all? This stretch of pavement is ideal.","Selam! Hiç kaykay sürer misin? Kaldırımın bu kısmı ideal."]),
+ Y('Hayır de; denemek istediğini söyle.',["No. I want to try!","Hayır. Denemek istiyorum!"],["Not yet, but I'd love to try!","Henüz değil ama denemeyi çok isterim!"],["Not really, but I've always wanted to learn.","Pek değil ama hep öğrenmek istemişimdir."],["Not really — though I've always fancied learning.","Pek sayılmaz — ama hep öğrenmek istemişimdir."]),
+ N(["Push with one foot.","Bir ayağınla it."],["Easy! Put one foot on the board and push with the other.","Kolay! Bir ayağını kaykaya koy, diğeriyle it."],["It's easy: front foot on the board, push with your back foot, then put both feet on and bend your knees.","Kolay: ön ayağın kaykayda, arka ayağınla it, sonra iki ayağını da koy ve dizlerini bük."],["Nothing to it: front foot on the deck, push off with the back foot, then plant both feet and keep your knees soft.","Çok kolay: ön ayak kaykayda, arka ayakla it, sonra iki ayağı da bas ve dizlerini yumuşak tut."]),
+ Y('Zıplama hareketinin adını sor.',["How do you jump?","Nasıl zıplıyorsun?"],["How do you jump with the board?","Kaykayla nasıl zıplıyorsun?"],["What's that jump where the board comes up with you?","Kaykayın seninle birlikte kalktığı o zıplamanın adı ne?"],["What's the jump called where the board pops up with you?","Kaykayın seninle birlikte havalandığı zıplamaya ne deniyor?"]),
+ N(["It is an ollie.","Adı ollie."],["That's an ollie. Kick the tail and jump!","O bir ollie. Kuyruğa vur ve zıpla!"],["That's an ollie — you snap the tail down and slide your front foot up. A kickflip is when the board spins too!","O ollie — kuyruğa sertçe basıp ön ayağını yukarı kaydırırsın. Kaykay bir de dönerse kickflip olur!"],["That's an ollie: snap the tail and drag your front foot up. Add a flick and the board spins — that's a kickflip.","O ollie: kuyruğa sertçe bas, ön ayağını yukarı sürükle. Bir de fiske katarsan kaykay döner — işte kickflip."]),
+ Object.assign(N(["Take my board! Try!","Kaykayımı al! Dene!"],["Here, take my spare board!","Al, yedek kaykayımı al!"],["Here — take my spare board! Press SPACE for an ollie and Q for a kickflip.","Al — yedek kaykayımı al! Ollie için BOŞLUK, kickflip için Q."],["Here, have my spare board! SPACE for an ollie, Q for a kickflip — and keep your knees bent.","Al, yedek kaykayım senin! Ollie için BOŞLUK, kickflip için Q — dizlerini bükük tut."]),{act:'skateGive'}),
+ Y('Teşekkür et.',["Thank you!","Teşekkürler!"],["Thanks a lot!","Çok teşekkürler!"],["Thanks, I'll give it a go!","Sağ ol, bir deneyeyim!"],["Cheers — let's see how I get on!","Sağ ol — bakalım nasıl olacak!"])
+]};
+SC.skateChat={quick:true,topic:'Konu: Kaykayla yan yana kayarken sohbet et — ne zamandır kaydığını, en sevdiği yeri sor.',steps:[
+ N(["Hi! Nice board!","Selam! Güzel kaykay!"],["Hey! Nice board! Let's skate together!","Selam! Güzel kaykay! Birlikte kayalım!"],["Hey! Nice board! Want to skate down to the square together?","Selam! Güzel kaykay! Meydana kadar birlikte kayalım mı?"],["Hey — nice deck! Fancy cruising down to the square together?","Selam — güzel kaykay! Meydana kadar birlikte kaymaya ne dersin?"]),
+ Y('Evet de; ne zamandır kaydığını sor.',["Yes! When did you start?","Evet! Ne zaman başladın?"],["Sure! How long have you been skating?","Tabii! Ne zamandır kaykay sürüyorsun?"],["Let's go! How long have you been skating?","Hadi! Ne zamandır kaykay sürüyorsun?"],["You're on! How long have you been skating for?","Olur! Ne zamandır kayıyorsun?"]),
+ N(["Two years.","İki yıl."],["For two years. I skate every day after school.","İki yıldır. Her gün okuldan sonra kayarım."],["About two years. I practise every day after school — I fell a lot at first!","Yaklaşık iki yıl. Her gün okuldan sonra çalışırım — başta çok düştüm!"],["Around two years — every day after school. I took plenty of tumbles at first!","Aşağı yukarı iki yıl — her gün okuldan sonra. Başta epey düştüm!"]),
+ Y('En sevdiği kayma yerini sor.',["Where do you like to skate?","Nerede kaymayı seversin?"],["Where's your favourite place to skate?","En sevdiğin kayma yeri neresi?"],["What's your favourite spot to skate in the city?","Şehirde en sevdiğin kayma yeri neresi?"],["Where's your favourite spot in town?","Şehirde en sevdiğin yer neresi?"]),
+ N(["The square!","Meydan!"],["Sultanahmet Square. It's very smooth.","Sultanahmet Meydanı. Çok pürüzsüz."],["The big square — the ground is really smooth, but we always slow down near people.","Büyük meydan — zemin çok pürüzsüz, ama insanların yanında hep yavaşlarız."],["The big square — lovely smooth ground, though we always ease off around pedestrians.","Büyük meydan — zemini pürüzsüz, ama yayaların yanında hep yavaşlarız."]),
+ Y('"Dikkat, önümüzde yaya var!" diye uyar.',["Careful! A person!","Dikkat! İnsan var!"],["Careful, there's someone in front of us!","Dikkat, önümüzde biri var!"],["Watch out — slow down, there are people ahead!","Dikkat — yavaşla, önümüzde insanlar var!"],["Heads up — ease off, pedestrians ahead!","Dikkat — yavaşla, ilerde yayalar var!"]),
+ N(["Thanks! Bye!","Sağ ol! Görüşürüz!"],["Thanks! OK, see you later!","Sağ ol! Tamam, sonra görüşürüz!"],["Good eye, thanks! I'm turning here — see you around!","İyi gördün, sağ ol! Ben buradan dönüyorum — görüşürüz!"],["Nice spot, cheers! This is my turn — catch you later!","İyi yakaladın, sağ ol! Buradan dönüyorum — sonra görüşürüz!"])
+]};
+SC.rsFood={topic:'Konu: Odadan resepsiyonu arayıp oda servisinden yemek sipariş et, hesabı odaya yazdır.',steps:[
+ N(["Reception. Hello!","Resepsiyon. Merhaba!"],["Reception, good evening. How can I help you?","Resepsiyon, iyi akşamlar. Nasıl yardımcı olabilirim?"],["Good evening, reception speaking. How may I help you?","İyi akşamlar, resepsiyon. Size nasıl yardımcı olabilirim?"],["Good evening, front desk speaking — how may I help?","İyi akşamlar, ön büro — nasıl yardımcı olabilirim?"]),
+ Y('Oda servisinden {dishTr} sipariş et.',["{dish}, please.","{dishTr}, lütfen."],["Hello, this is room 2405. I'd like {dish}, please.","Merhaba, 2405 numaralı oda. {dishTr} istiyorum, lütfen."],["Hi, it's room 2405. Could I order {dish} from room service, please?","Merhaba, 2405. Oda servisinden {dishTr} sipariş edebilir miyim?"],["Hello, room 2405 here. I'd like to order {dish} from room service, please.","Merhaba, 2405 numaralı odadan arıyorum. Oda servisinden {dishTr} sipariş etmek istiyorum."]),
+ N(["OK. A drink?","Tamam. İçecek?"],["Of course. Would you like a drink?","Tabii. İçecek ister misiniz?"],["Certainly. Would you like anything to drink with that?","Elbette. Yanında bir şey içmek ister misiniz?"],["Certainly. Can I get you anything to drink with that?","Elbette. Yanında içecek bir şey alır mısınız?"]),
+ {raw:'y',hint:'Bir içecek iste ya da teşekkür edip istemediğini söyle.',opts:[["A bottle of water, please.","Bir şişe su, lütfen.",2],["An orange juice, please.","Bir portakal suyu, lütfen.",2],["No, thank you.","Hayır, teşekkürler.",2],["I am a sandwich.","Ben bir sandviçim.",0]]},
+ N(["{price} lira. OK?","{price} lira. Tamam mı?"],["That's {price} lira. Shall I add it to your room bill?","{price} lira. Oda hesabınıza ekleyeyim mi?"],["That comes to {price} lira. Shall I charge it to your room?","Toplam {price} lira. Odanıza yazayım mı?"],["That'll be {price} lira — shall I put it on your room?","{price} lira tutuyor — odanıza yazayım mı?"]),
+ Y('Oda hesabına eklemesini söyle; ne zaman geleceğini sor.',["Yes. When?","Evet. Ne zaman?"],["Yes, please. How long will it take?","Evet, lütfen. Ne kadar sürer?"],["Yes, please charge it to my room. How long will it be?","Evet, lütfen odama yazın. Ne kadar sürer?"],["Yes, put it on the room, please. Roughly how long?","Evet, odaya yazın lütfen. Aşağı yukarı ne kadar sürer?"]),
+ Object.assign(N(["Twenty minutes. Bye!","Yirmi dakika. Hoşça kalın!"],["About twenty minutes. Enjoy your meal!","Yaklaşık yirmi dakika. Afiyet olsun!"],["About twenty minutes. Someone will knock on your door. Enjoy your meal!","Yaklaşık yirmi dakika. Biri kapınızı çalacak. Afiyet olsun!"],["Around twenty minutes — someone will knock when it's ready. Enjoy!","Yaklaşık yirmi dakika — hazır olunca biri kapınızı çalacak. Afiyet olsun!"]),{act:'rsFood'})
+]};
+SC.rsDeliver={quick:true,topic:'Konu: Oda servisi garsonu yemeğini getirdi — kapıyı aç, teşekkür et.',steps:[
+ N(["Room service!","Oda servisi!"],["Room service! Here's your {dish}.","Oda servisi! {dishTr} burada."],["Good evening! Room service — your {dish}. Where shall I put the tray?","İyi akşamlar! Oda servisi — {dishTr}. Tepsiyi nereye koyayım?"],["Good evening — room service. Your {dish}; where would you like the tray?","İyi akşamlar — oda servisi. {dishTr}; tepsiyi nereye bırakayım?"]),
+ Y('Masaya koymasını söyle, teşekkür et.',["On the table. Thank you!","Masaya. Teşekkürler!"],["On the desk, please. Thank you!","Masaya, lütfen. Teşekkürler!"],["Just on the desk, please. Thanks very much!","Masanın üstüne, lütfen. Çok teşekkürler!"],["On the desk would be perfect — thank you so much!","Masanın üstü harika olur — çok teşekkürler!"]),
+ N(["Enjoy!","Afiyet olsun!"],["You're welcome. Enjoy your meal!","Rica ederim. Afiyet olsun!"],["My pleasure. Enjoy your meal, and have a good night!","Ne demek. Afiyet olsun, iyi geceler!"],["My pleasure — enjoy, and have a lovely evening!","Ne demek — afiyet olsun, iyi akşamlar!"])
+]};
+SC.rsClean={topic:'Konu: Resepsiyonu arayıp yarın odanın temizlenmesini ve yeni havlu iste.',steps:[
+ N(["Reception. Hello!","Resepsiyon. Merhaba!"],["Reception, how can I help you?","Resepsiyon, nasıl yardımcı olabilirim?"],["Reception speaking. How may I help you?","Resepsiyon. Size nasıl yardımcı olabilirim?"],["Front desk — how can I help?","Ön büro — nasıl yardımcı olabilirim?"]),
+ Y('Yarın odanın temizlenmesini iste.',["Clean my room tomorrow, please.","Yarın odamı temizleyin, lütfen."],["Could you clean my room tomorrow, please?","Yarın odamı temizleyebilir misiniz?"],["Hello, it's room 2405. Could housekeeping clean my room tomorrow?","Merhaba, 2405. Kat hizmetleri yarın odamı temizleyebilir mi?"],["Hi, room 2405. I'd like housekeeping to make up the room tomorrow, please.","Merhaba, 2405. Yarın kat hizmetlerinin odayı toplamasını rica ediyorum."]),
+ N(["OK. What time?","Tamam. Saat kaçta?"],["Of course. What time is good for you?","Tabii. Size hangi saat uygun?"],["Certainly. What time would suit you best?","Elbette. Size en uygun saat hangisi?"],["Of course — what time would work best for you?","Tabii — size hangi saat en uygun olur?"]),
+ {raw:'y',hint:'Uygun bir saat söyle (kahvaltıdan sonra).',opts:[["At ten o'clock, please.","Saat onda, lütfen.",2],["After breakfast, around ten.","Kahvaltıdan sonra, ona doğru.",2],["At three in the night.","Gece üçte.",0]]},
+ N(["OK. Towels?","Tamam. Havlu?"],["Fine. Do you need fresh towels too?","Olur. Yeni havlu da ister misiniz?"],["Perfect. Would you also like fresh towels?","Mükemmel. Yeni havlu da ister misiniz?"],["Lovely. And would you like fresh towels as well?","Harika. Yeni havlu da ister misiniz?"]),
+ Y('Evet, yeni havlu iste ve teşekkür et.',["Yes, please. Thank you!","Evet, lütfen. Teşekkürler!"],["Yes, fresh towels, please. Thanks!","Evet, yeni havlu, lütfen. Teşekkürler!"],["Yes, please — two fresh towels. Thank you very much.","Evet, lütfen — iki yeni havlu. Çok teşekkürler."],["Yes please, a couple of fresh towels. Many thanks.","Evet lütfen, birkaç yeni havlu. Çok teşekkürler."]),
+ Object.assign(N(["OK! Tomorrow at ten.","Tamam! Yarın onda."],["No problem. Housekeeping will come tomorrow at ten.","Sorun değil. Kat hizmetleri yarın saat onda gelecek."],["No problem at all. Housekeeping will come at ten tomorrow. Have a good night!","Hiç sorun değil. Kat hizmetleri yarın onda gelecek. İyi geceler!"],["Not a problem — housekeeping will be up at ten tomorrow. Good night!","Hiç sorun değil — kat hizmetleri yarın onda gelecek. İyi geceler!"]),{act:'rsClean'})
+]};
+SC.rsWake={quick:true,topic:'Konu: Resepsiyondan sabah saat 7 için uyandırma servisi iste.',steps:[
+ N(["Reception. Hello!","Resepsiyon. Merhaba!"],["Reception, how can I help?","Resepsiyon, nasıl yardımcı olabilirim?"],["Reception speaking, how can I help?","Resepsiyon, nasıl yardımcı olabilirim?"],["Front desk, how may I help?","Ön büro, nasıl yardımcı olabilirim?"]),
+ Y('Sabah 7 için uyandırma servisi iste.',["Wake me up at seven, please.","Beni yedide uyandırın, lütfen."],["Can I have a wake-up call at seven, please?","Saat yedide uyandırma servisi alabilir miyim?"],["Could I book a wake-up call for seven tomorrow morning?","Yarın sabah yedi için uyandırma servisi ayarlayabilir miyim?"],["I'd like a wake-up call at seven tomorrow, please.","Yarın sabah yedide uyandırılmak istiyorum, lütfen."]),
+ Object.assign(N(["OK! Good night!","Tamam! İyi geceler!"],["Of course. Seven o'clock. Good night!","Tabii. Saat yedi. İyi geceler!"],["Certainly — a wake-up call at seven. Sleep well!","Elbette — saat yedide uyandırma. İyi uykular!"],["Certainly — seven o'clock sharp. Sleep well!","Elbette — tam yedide. İyi uykular!"]),{act:'rsWake'})
+]};
+SC.breakfast={topic:'Konu: Sky Restaurant\'ta garsondan kahvaltı iste — masa, kahvaltı türü, çay ya da kahve.',steps:[
+ N(["Good morning! One?","Günaydın! Bir kişi mi?"],["Good morning! A table for one?","Günaydın! Bir kişilik masa mı?"],["Good morning and welcome to the Sky Restaurant! A table for one?","Günaydın, Sky Restaurant'a hoş geldiniz! Bir kişilik masa mı?"],["Good morning, and welcome to the Sky Restaurant. Just the one of you?","Günaydın, Sky Restaurant'a hoş geldiniz. Tek kişi misiniz?"]),
+ Y('Evet de; pencere kenarında oturmak istediğini söyle.',["Yes. By the window, please.","Evet. Pencere kenarı, lütfen."],["Yes, please. Can I sit by the window?","Evet, lütfen. Pencere kenarına oturabilir miyim?"],["Yes, just me. Could I have a table by the window?","Evet, sadece ben. Pencere kenarında bir masa olabilir mi?"],["Yes, just me — a window table if possible, please.","Evet, sadece ben — mümkünse pencere kenarı, lütfen."]),
+ N(["OK. Turkish breakfast or eggs?","Tamam. Serpme kahvaltı mı, yumurta mı?"],["Of course. Turkish breakfast or an omelette?","Tabii. Türk kahvaltısı mı, omlet mi?"],["Of course, follow me. Would you like our Turkish breakfast or an omelette? Breakfast is included in your room.","Tabii, buyurun. Türk kahvaltımızı mı yoksa omlet mi istersiniz? Kahvaltı oda ücretine dahil."],["Certainly — right this way. Would you prefer the Turkish breakfast or an omelette? It's included in your room rate.","Elbette — buyurun. Türk kahvaltısı mı, omlet mi tercih edersiniz? Oda ücretinize dahil."]),
+ {raw:'y',hint:'Kahvaltı türünü seç.',opts:[["The Turkish breakfast, please.","Türk kahvaltısı, lütfen.",2],["An omelette with cheese, please.","Peynirli omlet, lütfen.",2],["A pizza and a cola, please.","Bir pizza ve kola, lütfen.",0]]},
+ N(["Tea or coffee?","Çay mı kahve mi?"],["Great choice! Tea or coffee?","Güzel seçim! Çay mı kahve mi?"],["Excellent choice! And would you like tea or coffee?","Harika seçim! Çay mı kahve mi istersiniz?"],["Excellent choice. Tea or coffee for you?","Harika seçim. Size çay mı kahve mi?"]),
+ Y('Çay iste.',["Tea, please.","Çay, lütfen."],["Tea, please. Thank you!","Çay, lütfen. Teşekkürler!"],["A glass of Turkish tea, please.","Bir bardak Türk çayı, lütfen."],["I'll have a glass of Turkish tea, please.","Bir bardak Türk çayı alayım, lütfen."]),
+ Object.assign(N(["Here! Enjoy!","Buyurun! Afiyet olsun!"],["Here you are. Enjoy your breakfast!","Buyurun. Afiyet olsun!"],["Here you are — enjoy your breakfast and the view!","Buyurun — kahvaltınızın ve manzaranın tadını çıkarın!"],["There you go — enjoy your breakfast, and the view!","Buyurun — kahvaltının ve manzaranın keyfini çıkarın!"]),{act:'bfServe'})
+]};
+
+// ---------- 0) BMX'ler daha belirgin
+BMXS.forEach(s=>{ s.v.g.scale.setScalar(1.18); s.spare.g.scale.setScalar(1.18); const fl=new THREE.Mesh(geoBox,new THREE.MeshBasicMaterial({color:0xffea00})); fl.scale.set(0.05,0.9,0.05); fl.position.set(-0.55,0.85,0.12); s.spare.g.add(fl); const fg=new THREE.Mesh(geoPlane,new THREE.MeshBasicMaterial({color:0xff1744,side:THREE.DoubleSide})); fg.scale.set(0.3,0.18,1); fg.position.set(-0.4,1.2,0.12); s.spare.g.add(fg); });
+
+// ---------- 1) KAYKAY
+function boardMesh(col){ const g=new THREE.Group(); scene.add(g); const d=new THREE.Mesh(geoBox,M(col)); d.scale.set(0.82,0.04,0.22); d.position.y=0.1; g.add(d); const tp=new THREE.Mesh(geoBox,M(0x222222)); tp.scale.set(0.8,0.005,0.2); tp.position.y=0.123; g.add(tp);
+ for(const e of [-1,1]){ const k=new THREE.Mesh(geoBox,M(col)); k.scale.set(0.14,0.04,0.22); k.position.set(e*0.45,0.12,0); k.rotation.z=e*0.35; g.add(k); }
+ for(const [x,z] of [[0.28,0.08],[0.28,-0.08],[-0.28,0.08],[-0.28,-0.08]]){ const w=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,0.04,10),M(0xfff59d)); w.rotation.x=Math.PI/2; w.position.set(x,0.04,z); g.add(w); } return g; }
+const SK={on:false,v:0,h:0,jy:0,jvy:0,flip:0,board:boardMesh(0x00b0ff),push:0}; SK.board.visible=false;
+function stancePose(h,push){ h.lHip.rotation.x=-0.25; h.rHip.rotation.x=0.25; h.lKn.rotation.x=0.35; h.rKn.rotation.x=0.35; h.root.position.y=-0.08; h.lSh.rotation.z=-1.1; h.rSh.rotation.z=1.1; h.lSh.rotation.x=0; h.rSh.rotation.x=0; h.spine.rotation.x=0.12; h.head.rotation.y=-1.2;
+ if(push){ const a=Math.sin(push*7); h.rHip.rotation.x=0.25+a*0.6; h.rKn.rotation.x=0.4+Math.max(0,-a)*0.6; } }
+const _ah29=animHuman; animHuman=function(h,dt){ _ah29(h,dt); if(h.skate) stancePose(h,h.skatePush||0); };
+function skateOn(){ const P=player; if(P.car||P.bus||DRIVE2.mode||ROOM.active||(typeof REST!=='undefined'&&REST.active)||(typeof INT!=='undefined'&&INT.cur)||(typeof BOAT!=='undefined'&&BOAT.cur)||(typeof BAL!=='undefined'&&BAL.on)) return; SK.on=true; SK.v=0; SK.h=P.yaw; SK.jy=0; SK.board.visible=true; P.h.skate=true; P.target=null; toast('🛹 Kaykaydasın! W/↑ it (hızlan) · S/↓ fren · A/D dön · <b>BOŞLUK</b> ollie · <b>Q</b> kickflip · <b>K</b> in',5000); }
+function skateOff(){ const P=player; SK.on=false; SK.v=0; SK.board.visible=false; P.h.skate=false; P.h.skatePush=0; P.h.root.position.y=0; P.h.head.rotation.y=0; P.h.g.position.y=P.y||0; toast('🛹 Kaykaydan indin (koltuğunun altında). K ile tekrar bin.',2200); }
+const SKK={ollie:false,flip:false};
+addEventListener('keydown',e=>{ if(document.activeElement.tagName==='INPUT'||document.activeElement.tagName==='TEXTAREA'||D.active) return; if(e.code==='KeyK'&&S.board){ SK.on?skateOff():skateOn(); } if(SK.on&&e.code==='Space'){ SKK.ollie=true; e.preventDefault(); } if(SK.on&&e.code==='KeyQ') SKK.flip=true; });
+const _up29=updatePlayer; updatePlayer=function(dt){ const P=player; if(!SK.on) return _up29(dt);
+ const px=P.x, pz=P.z; P.target=null; _up29(dt); // yürüme hareketini geri al, kaykay fiziğini uygula
+ if(RIDE29.on){ const b=RIDE29.b; SK.h=b.h; SK.v=2.8; const side=b.side||1; P.x=b.x-Math.sin(b.h)*0.2+Math.cos(b.h)*1.1*side; P.z=b.z-Math.cos(b.h)*0.2-Math.sin(b.h)*1.1*side; }
+ else { const fw=!D.active&&(keys.KeyW||keys.ArrowUp||mob.u), bk=!D.active&&(keys.KeyS||keys.ArrowDown||mob.d); const tr=D.active?0:((keys.KeyA||keys.ArrowLeft||mob.l?1:0)-(keys.KeyD||keys.ArrowRight||mob.r?1:0));
+  if(fw&&SK.jy<=0){ SK.v=Math.min(7.5,SK.v+(SK.v<3?2.8:1.6)*dt); SK.push+=dt; } else SK.push=0; if(bk) SK.v=Math.max(0,SK.v-4.5*dt); SK.v*=Math.exp(-dt*0.15); SK.h+=tr*dt*1.9*clamp(SK.v/2+0.3,0.3,1);
+  let nx=px+Math.sin(SK.h)*SK.v*dt, nz=pz+Math.cos(SK.h)*SK.v*dt; let q=collide(nx,nz,0.35); if(Math.hypot(q[0]-nx,q[1]-nz)>0.05) SK.v*=0.6; nx=q[0]; nz=q[1];
+  if(P.zone){ const Z=P.zone; nx=clamp(nx,Z.x1,Z.x2); nz=clamp(nz,Z.z1,Z.z2); } else { const c=cityClamp(nx,nz); if(Math.hypot(c[0]-nx,c[1]-nz)>0.01) SK.v*=0.7; nx=c[0]; nz=c[1]; } P.x=nx; P.z=nz; }
+ if(SK.jy<=0&&(SKK.ollie||SKK.flip)){ SK.jvy=SKK.flip?4.0:3.4; SK.flip=SKK.flip?1:0; SK.air=0; } SKK.ollie=SKK.flip=false;
+ if(SK.jy>0||SK.jvy>0){ SK.jvy-=11*dt; SK.jy=Math.max(0,SK.jy+SK.jvy*dt); SK.air+=dt; if(SK.jy<=0){ SK.jvy=0; const t=SK.flip?'🌀 Kickflip!':'🛹 Ollie!'; S.skateTricks=(S.skateTricks||0)+1; S.xp+=SK.flip?10:5; updateHUD(); save(); checkBadges(); toast(t+' <b>+'+(SK.flip?10:5)+' XP</b>',1200); SK.flip=0; } }
+ P.yaw=SK.h+Math.PI/2; P.h.skate=true; P.h.skatePush=SK.push; P.h.anim='idle'; P.speed=SK.v; const y=(P.y||0)+SK.jy;
+ P.h.g.position.set(P.x,y+0.12,P.z); P.h.g.rotation.y=P.yaw; animHuman(P.h,0);
+ SK.board.position.set(P.x,y,P.z); SK.board.rotation.set(SK.flip?Math.min(1,SK.air/0.6)*Math.PI*2:0,SK.h-Math.PI/2,0,'YXZ');
+ if(!D.active&&SK.v>0.3&&!camS._drag?.()) camS.yaw=turnTo(camS.yaw,SK.h+Math.PI,dt*1.6); };
+// kaykaycılar (yan yana kayıp sohbet)
+const SKATERS=[]; const RIDE29={on:false,b:null};
+function skater(name,en,x1,x2,zA,zB,col,female){ const n=addNPC({role:R(name,en,'🛹'),ctx:'casual',sc:'skate',x:x1+4,z:zA,y:0.12,yaw:Math.PI/2,av:'🛹',look:{female,shirt:pick([0x212121,0xff4081,0x76ff03,0x40c4ff]),longSleeve:false},outdoor:true}); n.noCrowd=true; n.noRain=true; n.talkAnim='idle'; n.h.skate=true;
+ const cap=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.14,0.08,12),M(col)); cap.position.y=0.21; n.h.head.add(cap);
+ const b={n,board:boardMesh(col),x:x1+4+Math.random()*(x2-x1-8),x1,x2,zA,zB,dir:Math.random()<.5?1:-1,sp:rnd(2.4,3.2),jy:0,jvy:0,t:rnd(2,5)}; SKATERS.push(b); return b; }
+skater('Kaykaycı Ada','Skater Ada',-110,80,-8.4,-9.6,0xff4081,true); skater('Kaykaycı Kerem','Skater Kerem',140,258,8.0,9.8,0x76ff03,false); skater('Kaykaycı Mina','Skater Mina',500,560,-92,-98,0x40c4ff,true); skater('Kaykaycı Arda','Skater Arda',-60,120,8.2,9.6,0xffab00,false);
+function updateSkaters(dt){ const P=player; RIDE29.on=!!(RIDE29.b&&D.active&&D.npc===RIDE29.b.n&&SK.on);
+ for(const b of SKATERS){ const n=b.n; const ride=RIDE29.on&&RIDE29.b===b; const stop=(n.state==='talking'||n.state==='listen')&&!ride; const sp=stop?0:(ride?2.8:b.sp);
+  b.x+=b.dir*sp*dt; if(b.x>b.x2) b.dir=-1; if(b.x<b.x1) b.dir=1; const z=b.dir>0?b.zA:b.zB; b.z=b.z===undefined?z:lerp(b.z,z,Math.min(1,dt*1.2)); b.h=b.dir>0?Math.PI/2:-Math.PI/2; b.side=(b.zA<0?1:-1)*(b.dir>0?1:-1);
+  b.t-=dt; if(!stop&&b.t<=0&&b.jy<=0){ b.jvy=3.2; b.t=rnd(3,7); } if(b.jy>0||b.jvy>0){ b.jvy-=11*dt; b.jy=Math.max(0,b.jy+b.jvy*dt); }
+  n.home.x=n.x=b.x; n.home.z=n.z=b.z; n.y=0.12+b.jy; n.home.yaw=n.yaw=b.h+Math.PI/2; n.home.anim='idle'; n.sitting=true; n.h.skatePush=sp>0&&Math.sin(T*0.7+b.x)>0.5?T:0;
+  b.board.position.set(b.x,b.jy,b.z); b.board.rotation.set(0,b.h-Math.PI/2,0); } }
+const _ead29=extraAfterDialog; extraAfterDialog=function(sc,n){ _ead29(sc,n); if(sc==='skate'&&SK.pend&&!D.closed){ SK.pend=false; S.board=true; save(); setTimeout(()=>skateOn(),400); } SK.pend=false;
+ if(sc==='rsFood'&&RS.pendFood&&!D.closed){ RS.pendFood=false; RS.foodT=T+12; toast('⏳ Yemeğin hazırlanıyor… (oyunda ~20 dk). Kapı çalınınca kapıya git.',4000); } if(sc==='rsDeliver'){ RS.waiter.hidden=true; RS.tray.visible=true; RS.waitDoor=false; toast('🍽️ Tepsi masada. <b>“Yemeğini ye”</b> düğmesine bas.',3000); }
+ if(sc==='breakfast'&&REST.pendBF&&!D.closed){ REST.pendBF=false; serveBreakfast(); } };
+const _exA29=extraAct; extraAct=function(a,n,v,P){ if(a==='skateGive'){ SK.pend=true; return 0.4; }
+ if(a==='rsFood'){ RS.pendFood=true; addMoney(-RS.price); return 0.4; } if(a==='rsClean'){ S.cleanReq=true; S.cleanDay=(S.dayCount||0)+1; save(); return 0.3; } if(a==='rsWake'){ S.wakeCall=true; save(); return 0.3; }
+ if(a==='bfServe'){ REST.pendBF=true; return 0.4; } return _exA29(a,n,v,P); };
+
+// ---------- 2) OTEL: oda telefonu, oda servisi, temizlik, uyandırma
+const RS={price:0,dish:'',waiter:null,tray:null,foodT:0,waitDoor:false};
+const DISHES=[['a club sandwich','kulüp sandviç',180,'🥪'],['meatballs with rice','köfte ve pilav',240,'🍛'],['a bowl of lentil soup','mercimek çorbası',120,'🍲'],['a margherita pizza','margarita pizza',220,'🍕']];
+const RSPH=addNPC({role:R('Resepsiyon (telefon)','Reception (phone)','☎️'),ctx:'casual',x:ROOM.door.x,z:ROOM.door.z,beh:'static'}); RSPH.hidden=true; RSPH.talk=false; RSPH.virtual=true; RSPH.noCrowd=true;
+(function(){ const H=HOTEL, Y=ROOM.y, z1=H.z-H.d/2+0.4; const ph=new THREE.Group(); ph.position.set(H.x+2.55,Y+0.8,z1+0.6); ROOM.g.add(ph); const b=new THREE.Mesh(geoBox,M(0x212121)); b.scale.set(0.22,0.06,0.16); ph.add(b); const hs=new THREE.Mesh(geoBox,M(0xc62828)); hs.scale.set(0.24,0.05,0.06); hs.position.y=0.06; ph.add(hs); ROOM.phone={x:H.x+2.55,z:z1+0.6};
+ const tr=new THREE.Group(); tr.position.set(H.x+1.8,Y+0.8,z1+0.6); ROOM.g.add(tr); const t=new THREE.Mesh(geoBox,M(0x9e9e9e,{metalness:.6})); t.scale.set(0.6,0.03,0.4); tr.add(t); const pl=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.15,0.03,16),M(0xffffff)); pl.position.y=0.03; tr.add(pl); const fd=new THREE.Mesh(new THREE.SphereGeometry(0.09,8,6),M(0xa1662f)); fd.scale.y=0.5; fd.position.y=0.07; tr.add(fd); const gl=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.03,0.12,8),M(0xffa726,{transparent:true,opacity:.8})); gl.position.set(0.2,0.08,0.1); tr.add(gl); tr.visible=false; RS.tray=tr;
+ const tw=new THREE.Group(); tw.position.set(ROOM.bed.x,Y+0.73,ROOM.bed.z+0.6); ROOM.g.add(tw); for(let i=0;i<2;i++){ const t2=new THREE.Mesh(geoBox,M(0xffffff)); t2.scale.set(0.5,0.08,0.32); t2.position.set(i*0.55-0.27,i*0.0,0); tw.add(t2); } const sw=new THREE.Mesh(new THREE.TorusGeometry(0.05,0.015,6,10),M(0xe91e63)); sw.position.set(0,0.06,0); tw.add(sw); tw.visible=false; ROOM.fresh=tw; })();
+RS.waiter=addNPC({role:R('Oda servisi garsonu','Room service waiter','🛎️'),ctx:'casual',x:ROOM.door.x,z:ROOM.door.z+0.4,yaw:0,av:'🛎️',look:{female:false,shirt:0xffffff,pants:0x111111,longSleeve:true},outdoor:false}); RS.waiter.hidden=true; RS.waiter.talk=false; RS.waiter.noCrowd=true;
+function callReception(){ if(D.active) return; askConfirm('Reception — how can I help you?','📞 Resepsiyonu arıyorsun. Ne istersin?',[['🍽️ Room service','Oda servisinden yemek sipariş et',()=>setTimeout(foodMenu,150)],['🧹 Clean my room tomorrow','Yarın sabah oda temizliği iste',()=>phoneTalk('rsClean')],['⏰ Wake-up call at 7','Sabah 7 için uyandırma servisi',()=>phoneTalk('rsWake')]]); }
+function foodMenu(){ askConfirm('Room service menu','🍽️ Ne sipariş etmek istersin?',DISHES.map(d=>[d[3]+' '+d[0].replace(/^a |^a bowl of /,'').replace(/^\w/,c=>c.toUpperCase())+' — '+d[2]+' ₺',d[1],()=>{ if(S.money<d[2]){ toast('💸 Paran yetmiyor ('+d[2]+' ₺).',2500); return; } RS.price=d[2]; RS.dish=d[0]; RS.dishTr=d[1]; phoneTalk('rsFood',{dish:d[0],dishTr:d[1],price:d[2]}); }])); }
+function phoneTalk(sc,vars){ const P=player; RSPH.x=RSPH.home.x=ROOM.phone.x+0.6; RSPH.z=RSPH.home.z=ROOM.phone.z+0.6; RSPH.y=ROOM.y; RSPH.lookAt={x:ROOM.phone.x,z:ROOM.phone.z}; P.yaw=Math.atan2(ROOM.phone.x-P.x,ROOM.phone.z-P.z); if(vars) D.presetVars=vars; try{ holdProp('phone'); }catch(e){} startDialog(RSPH,'npc',sc); }
+function hotelTick(dt){ if(RS.foodT&&T>RS.foodT){ RS.foodT=0; RS.waitDoor=true; const w=RS.waiter; w.hidden=false; w.x=w.home.x=ROOM.door.x; w.z=w.home.z=ROOM.door.z-0.2; w.y=ROOM.y; w.yaw=w.home.yaw=0; w.home.anim='offer'; w.state='static'; if(ROOM.active){ toast('🚪 <b>Tak tak!</b> “Room service!” — kapıya git ve aç.',4000); sfxBeep(true); setTimeout(()=>sfxBeep(true),250); } }
+ if(!ROOM.active&&RS.waitDoor){ /* oda dışında: yemek kapı önünde bekler */ }
+ if(S.cleanReq&&TM.hour>=10&&TM.hour<20&&!ROOM.active&&(S.dayCount||0)>=(S.cleanDay||0)){ S.cleanReq=false; S.roomClean=true; save(); }
+ RS.waiter.y=ROOM.y; }
+const _goRoom29=goRoom; goRoom=function(){ _goRoom29(); setTimeout(()=>{ if(!ROOM.active) return; if(S.roomClean){ S.roomClean=false; save(); ROOM.fresh.visible=true; toast('🧹 Odan temizlenmiş: yatak yapılmış, yeni havlular bırakılmış.',4000); } if(RS.waitDoor){ toast('🚪 Oda servisi kapının önünde bekliyor!',3000); } },1300); };
+const _sleep29=sleepNight; sleepNight=function(){ _sleep29(); S.dayCount=(S.dayCount||0)+1; save(); setTimeout(()=>{ if(S.wakeCall){ S.wakeCall=false; save(); toast('☎️ <b>Rrring!</b> Uyandırma servisi: “Good morning! This is your wake-up call. It\'s seven o\'clock.”',5000); sayEn("Good morning! This is your wake-up call. It's seven o'clock."); } setTimeout(()=>toast('🍳 Kahvaltı en üst kattaki <b>Sky Restaurant</b>\'ta (07:00–10:30). Odada <b>“🛗 Sky Restaurant”</b> düğmesine bas.',5000),S.wakeCall===false?5200:500); },1900); };
+function eatFood(){ const P=player; RS.tray.visible=false; P.h.anim='offer'; player.energy=Math.min(100,(player.energy||0)+40); S.meals=(S.meals||0)+1; save(); checkBadges(); toast('😋 Afiyet olsun! Enerjin arttı. <i>That was delicious!</i>',3000); sayEn('That was delicious!'); }
+
+// ---------- 3) EN ÜST KAT: SKY RESTAURANT
+const REST={active:false,y:HOTEL.floorY+22,g:null,cols:[],bfTable:null,eating:0,view:0};
+(function(){ const H=HOTEL, Y=REST.y, x1=H.x-H.w/2+0.4, x2=H.x+H.w/2-0.4, z1=H.z-H.d/2+0.4, z2=H.z+H.d/2-0.4; const g=new THREE.Group(); scene.add(g); g.visible=false; REST.g=g;
+ const wood=M(0x6d4c41), white=M(0xfafafa), cloth=M(0xffffff), gold=M(0xd4af37,{metalness:.7,roughness:.3});
+ box(x2-x1,0.2,z2-z1,M(0x5d4037,{roughness:.6}),H.x,Y-0.1,H.z,g); box(x2-x1,0.15,z2-z1,M(0xf3ede2),H.x,Y+3.8,H.z,g,false);
+ const glass=new THREE.MeshStandardMaterial({color:0xbfe3ff,transparent:true,opacity:.1,depthWrite:false,side:THREE.DoubleSide});
+ for(const [w,d,x,z] of [[x2-x1,0.05,H.x,z1],[x2-x1,0.05,H.x,z2],[0.05,z2-z1,x1,H.z],[0.05,z2-z1,x2,H.z]]){ const m=new THREE.Mesh(geoBox,glass); m.scale.set(w,3.8,d); m.position.set(x,Y+1.9,z); g.add(m); const cb=new THREE.Mesh(geoBox,new THREE.MeshBasicMaterial({visible:false})); cb.scale.set(w+0.1,3.8,d+0.1); cb.position.copy(m.position); g.add(cb); if(typeof camBlock!=='undefined') camBlock.push(cb); }
+ const fr=M(0x263238,{metalness:.6}); for(let x=x1;x<=x2+0.01;x+=(x2-x1)/6){ box(0.08,3.8,0.08,fr,x,Y+1.9,z1,g,false); box(0.08,3.8,0.08,fr,x,Y+1.9,z2,g,false); }
+ // açık büfe
+ const bx=H.x, bz=z1+1.2; box(8,0.9,0.9,wood,bx,Y+0.45,bz,g); box(8.1,0.05,1.0,white,bx,Y+0.92,bz,g,false); REST.cols.push([bx-4.1,bz-0.5,bx+4.1,bz+0.5]);
+ const foods=[[0xfafafa,'box'],[0xd32f2f,'sph'],[0x212121,'olive'],[0x7cb342,'cyl'],[0xffeb3b,'egg'],[0xa1662f,'simit'],[0xff9800,'box'],[0xe57373,'sph']];
+ foods.forEach((f,i)=>{ const x=bx-3.5+i*1.0; const pl=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,0.03,16),white); pl.position.set(x,Y+0.96,bz); g.add(pl);
+  for(let k=0;k<6;k++){ let m; if(f[1]==='box'){ m=new THREE.Mesh(geoBox,M(f[0])); m.scale.set(0.12,0.06,0.09); } else if(f[1]==='cyl'){ m=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.02,10),M(f[0])); } else if(f[1]==='simit'){ m=new THREE.Mesh(new THREE.TorusGeometry(0.08,0.03,6,12),M(f[0])); m.rotation.x=Math.PI/2; } else { m=new THREE.Mesh(new THREE.SphereGeometry(f[1]==='olive'?0.025:f[1]==='egg'?0.05:0.05,8,6),M(f[0])); }
+   m.position.set(x+rnd(-0.18,0.18),Y+1.0,bz+rnd(-0.15,0.15)); g.add(m); } });
+ for(let i=0;i<5;i++){ const t=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.03,0.1,8),M(0xb71c1c,{transparent:true,opacity:.85})); t.position.set(bx+3.7,Y+1.0,bz-0.3+i*0.14); g.add(t); }
+ const sg=new THREE.Mesh(geoPlane,new THREE.MeshStandardMaterial({map:texSign('SKY RESTAURANT · KAHVALTI','BREAKFAST 07:00–10:30','#3e2723','#ffd54f'),emissive:0xffffff,emissiveIntensity:.2})); sg.material.emissiveMap=sg.material.map; sg.scale.set(5,1.25,1); sg.position.set(bx,Y+2.6,z1+0.1); g.add(sg);
+ // masalar
+ REST.tables=[]; const tp=[[x1+3,z2-2.2],[x1+7,z2-2.2],[x2-7,z2-2.2],[x2-3,z2-2.2],[x1+3,H.z],[x2-3,H.z]];
+ tp.forEach(([x,z])=>{ const t=new THREE.Mesh(new THREE.CylinderGeometry(0.55,0.55,0.05,18),cloth); t.position.set(x,Y+0.76,z); g.add(t); const lg=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.74,6),gold); lg.position.set(x,Y+0.38,z); g.add(lg);
+  for(const s of [-1,1]){ box(0.42,0.45,0.42,M(0x8d6e63),x+s*0.85,Y+0.23,z,g,false); box(0.42,0.5,0.06,M(0x8d6e63),x+s*1.05,Y+0.7,z,g,false); } REST.cols.push([x-1.1,z-0.55,x+1.1,z+0.55]); REST.tables.push({x,z}); });
+ const fl=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.04,0.2,8),M(0x81d4fa,{transparent:true,opacity:.6})); fl.position.set(tp[0][0],Y+0.88,tp[0][1]); g.add(fl);
+ const L1=new THREE.PointLight(0xfff2d6,0.9,22); L1.position.set(H.x,Y+3.2,H.z); g.add(L1);
+ REST.lift={x:HOTEL.lift.x,z:z2-1.4}; box(1.6,2.4,0.1,M(0xb0bec5,{metalness:.8,roughness:.2}),REST.lift.x,Y+1.2,z2-0.12,g,false);
+ REST.cols=REST.cols.map(a=>({x1:a[0],z1:a[1],x2:a[2],z2:a[3]})); REST.zone={x1:x1+0.35,x2:x2-0.35,z1:z1+0.35,z2:z2-0.35,name:'Sky Restaurant',room:true};
+ // servis tabağı (kahvaltı)
+ const bf=new THREE.Group(); g.add(bf); bf.visible=false; const plt=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,0.03,16),white); bf.add(plt); [[0xfafafa,0.08,0],[0xd32f2f,-0.08,0.06],[0x212121,0,-0.1],[0xffeb3b,-0.1,-0.04],[0x7cb342,0.1,0.1]].forEach(([c,x,z])=>{ const m=new THREE.Mesh(new THREE.SphereGeometry(0.05,8,6),M(c)); m.scale.y=0.6; m.position.set(x,0.04,z); bf.add(m); }); const sm=new THREE.Mesh(new THREE.TorusGeometry(0.09,0.03,6,12),M(0xa1662f)); sm.rotation.x=Math.PI/2; sm.position.set(0.32,0.04,0); bf.add(sm); const tg=new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.03,0.1,8),M(0xb71c1c,{transparent:true,opacity:.85})); tg.position.set(-0.3,0.06,0.15); bf.add(tg); REST.bf=bf; })();
+const WAITER=addNPC({role:R('Sky Restaurant garsonu','Restaurant waiter','🍳'),ctx:'casual',sc:'breakfast',x:HOTEL.x+3,z:HOTEL.z+3,y:REST.y,yaw:Math.PI,av:'🍳',look:{female:Math.random()<.5,shirt:0xffffff,pants:0x111111,longSleeve:true},outdoor:false,handsBack:true}); WAITER.noCrowd=true;
+const CHEF=addNPC({role:R('Aşçı','Chef','👨‍🍳'),ctx:'casual',params:{a:'cooking breakfast for the guests',at:'misafirlere kahvaltı hazırlamayı'},x:HOTEL.x-1,z:HOTEL.z-HOTEL.d/2+0.6,y:REST.y,yaw:0,av:'👨‍🍳',look:{shirt:0xffffff,longSleeve:true},outdoor:false}); CHEF.noCrowd=true; (function(){ const ht=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.11,0.22,12),M(0xffffff)); ht.position.y=0.25; CHEF.h.head.add(ht); })();
+const RGUESTS=[]; [[1,1],[2,-1],[4,1]].forEach(([ti,s],i)=>{ const t=REST.tables[ti]; const n=addNPC({role:R('Otel misafiri','Hotel guest','☕'),ctx:'casual',params:{a:'having breakfast with this view',at:'bu manzarayla kahvaltı yapmayı'},x:t.x+s*0.85,z:t.z,y:REST.y,yaw:s>0?-Math.PI/2:Math.PI/2,anim:'sit',look:{female:i!==1,longSleeve:true},outdoor:false}); n.noCrowd=true; RGUESTS.push(n); });
+const REST_NPCS=[WAITER,CHEF,...RGUESTS]; REST_NPCS.forEach(n=>{ n._talk=n.talk; n.talk=false; n.hidden=true; });
+function setRestNPCs(on){ REST_NPCS.forEach(n=>{ n.hidden=!on; n.talk=on?n._talk:false; n.y=REST.y; }); }
+function goRest(){ if(!S.hotelKey){ toast('🔑 Restoran otel misafirleri için — önce resepsiyondan oda tut.',3000); return; } fadeScreen(()=>{ if(ROOM.active){ ROOM.active=false; ROOM.sleeping=false; ROOM.view=0; ROOM.g.visible=false; } REST.active=true; REST.g.visible=true; setRestNPCs(true); const P=player; P.zone=REST.zone; P.x=REST.lift.x; P.z=REST.lift.z-0.6; P.yaw=Math.PI; P.target=null; camS.dist=Math.min(camS.dist,5);
+  toast('🍳 <b>Sky Restaurant</b> — şehrin en tepesi! Garsonla konuş, kahvaltını iste. Pencereden manzaraya bak.',4500); }); }
+function leaveRest(to){ fadeScreen(()=>{ REST.active=false; REST.view=0; REST.g.visible=false; setRestNPCs(false); REST.bf.visible=false; REST.eating=0; player.seat=null; if(to==='room'){ player.zone=null; setTimeout(()=>goRoom(),50); return; } player.zone=null; player.x=HOTEL.lift.x; player.z=HOTEL.lift.z-1; player.yaw=Math.PI; player.target=null; }); }
+function serveBreakfast(){ const P=player; let t=REST.tables[0], bd=1e9; REST.tables.forEach(tb=>{ const d=Math.hypot(tb.x-P.x,tb.z-P.z); const busy=RGUESTS.some(g=>Math.hypot(g.x-tb.x,g.z-tb.z)<1.2); if(!busy&&d<bd){ bd=d; t=tb; } }); REST.bfTable=t; REST.bf.position.set(t.x,REST.y+0.8,t.z); REST.bf.visible=true;
+ P.seat={x:t.x-0.85,z:t.z,yaw:Math.PI/2}; toast('🍽️ Masan hazır! <b>“🍳 Kahvaltı yap”</b> düğmesine bas.',3000); }
+const _col29=collide; collide=function(x,z,r){ if(REST.active&&Math.abs(x-HOTEL.x)<14&&Math.abs(z-HOTEL.z)<10){ for(const c of REST.cols){ if(x+r<c.x1||x-r>c.x2||z+r<c.z1||z-r>c.z2) continue; const qx=clamp(x,c.x1,c.x2),qz=clamp(z,c.z1,c.z2), dx=x-qx, dz=z-qz, d=Math.hypot(dx,dz); if(d<r){ if(d>1e-5){ x=qx+dx/d*r; z=qz+dz/d*r; } else { const L=[x-c.x1,c.x2-x,z-c.z1,c.z2-z], m=Math.min(...L); if(m===L[0]) x=c.x1-r; else if(m===L[1]) x=c.x2+r; else if(m===L[2]) z=c.z1-r; else z=c.z2+r; } } } return [x,z]; } return _col29(x,z,r); };
+const _up29b=updatePlayer; updatePlayer=function(dt){ _up29b(dt); const P=player; if(REST.active){ P.y=REST.y; P.h.g.position.y=REST.y+(P.seat?0:0); if(REST.eating>0){ REST.eating-=dt; const h=P.h; h.rSh.rotation.x=-1.1+Math.sin(T*5)*0.3; h.rEl.rotation.x=-1.4; if(REST.eating<=0){ REST.bf.visible=false; P.seat=null; player.energy=100; S.breakfasts=(S.breakfasts||0)+1; save(); checkBadges(); toast('☀️ Harika bir kahvaltı! Enerjin doldu. Şimdi aşağı inip şehre çık. <i>What a great breakfast!</i>',4500); sayEn('What a great breakfast! Time to start the day.'); } } } };
+const _tp29=teleportTo; teleportTo=function(x,z,n){ if(REST.active||SK.on&&false){ toast('🚫 Önce restorandan in.',2500); return; } return _tp29(x,z,n); };
+// kamera: yüksek katlarda diyalog / manzara
+const _uc29=updateCamera; updateCamera=function(dt){ _uc29(dt); const P=player;
+ if(D.active&&(ROOM.active||REST.active)&&D.npc){ const n=D.npc; const tx=n.virtual&&n.lookAt?n.lookAt.x:n.x, tz=n.virtual&&n.lookAt?n.lookAt.z:n.z, ty=n.virtual?P.y+0.9:(n.y||P.y)+1.45; const dx=tx-P.x, dz=tz-P.z, d=Math.hypot(dx,dz)||1, ux=dx/d, uz=dz/d;
+  camera.position.set(P.x-ux*2.2+(-uz)*1.2,P.y+1.85,wz(P.z-uz*2.2+ux*1.2)); camera.lookAt(tx,ty,wz(tz)); camera.updateMatrixWorld(); return; }
+ if(REST.active&&REST.view){ const H=HOTEL; const zz=H.z+H.d/2-1.0; camera.position.set(H.x,REST.y+1.7,wz(zz)); camera.lookAt(H.x+12,REST.y-30,wz(zz+70)); camera.updateMatrixWorld(); } };
+const _updProx29=updateProximity; updateProximity=function(){ if(REST.active&&!D.active){ const P=player; let best=null,bd=1.5; REST_NPCS.forEach(n=>{ if(!n.talk) return; const d=Math.hypot(n.x-P.x,n.z-P.z); if(d<bd){ bd=d; best=n; } }); if(best){ if(best!==promptNPC) showPrompt(best); } else { hidePrompt(); promptNPC=null; } return; } return _updProx29(); };
+// eylemler
+const _ea29=extraActions; extraActions=function(items){ const P=player; _ea29(items);
+ if(SK.on&&!D.active){ items.length=0; items.push(['🛹 Kaykaydan in (K)','skOff']); const b=SKATERS.find(b=>Math.hypot(b.x-P.x,b.z-P.z)<6); if(b) items.unshift(['💬 '+b.n.role.tr.replace('Kaykaycı ','')+' ile kayarken sohbet et','skTalk']); return; }
+ if(D.active) return;
+ if(!P.car&&!P.zone&&!ROOM.active&&!REST.active&&S.board&&!(typeof INT!=='undefined'&&INT.cur)) items.push(['🛹 Kaykaya bin (K)','skOn']);
+ if(!P.car&&!P.zone&&!S.board){ const b=SKATERS.find(b=>Math.hypot(b.x-P.x,b.z-P.z)<4); if(b) items.push(['🛹 Kaykay denemek için '+b.n.role.tr.replace('Kaykaycı ','')+' ile konuş','skAsk']); }
+ if(ROOM.active&&!ROOM.sleeping){ items.unshift(['📞 Resepsiyonu ara','callRec']); items.push(['🛗 Sky Restaurant (en üst kat)','toRest']); if(RS.tray.visible&&Math.hypot(P.x-HOTEL.x-1.8,P.z-(HOTEL.z-HOTEL.d/2+1))<2.6) items.unshift(['🍽️ Yemeğini ye','eatFood']); else if(RS.tray.visible) items.push(['🍽️ Masaya git (yemek)','toTray']);
+  if(RS.waitDoor){ if(Math.hypot(P.x-ROOM.door.x,P.z-ROOM.door.z)<2.6) items.unshift(['🚪 Kapıyı aç (oda servisi)','openDoor']); else items.unshift(['🚪 Kapıya git (oda servisi!)','toDoor']); } }
+ if(REST.active){ items.length=0; if(REST.eating>0) return; if(REST.bf.visible&&P.seat) items.push(['🍳 Kahvaltı yap','eatBF']); items.push([REST.view?'↩️ Masaya dön':'🪟 Manzaraya bak','restView']); if(Math.hypot(P.x-REST.lift.x,P.z-REST.lift.z)<2.6){ items.push(['🛗 Odana in (24. kat)','restRoom'],['🛗 Lobiye in','restLobby']); } else items.push(['🛗 Asansöre git','toRestLift']); return; }
+ if(!P.car&&!ROOM.active&&Math.hypot(P.x-HOTEL.lift.x,P.z-HOTEL.lift.z)<2.4&&S.hotelKey) items.push(['🛗 Sky Restaurant (en üst kat)','toRest']); };
+const _eak29=extraActionKey; extraActionKey=function(k){ const P=player;
+ if(k==='skOn') return skateOn(); if(k==='skOff') return skateOff(); if(k==='skTalk'){ const b=SKATERS.find(b=>Math.hypot(b.x-P.x,b.z-P.z)<6); if(b){ RIDE29.b=b; startDialog(b.n,'npc','skateChat'); } return; } if(k==='skAsk'){ const b=SKATERS.find(b=>Math.hypot(b.x-P.x,b.z-P.z)<4); if(b) startDialog(b.n,'npc','skate'); return; }
+ if(k==='callRec') return callReception(); if(k==='toRest') return goRest(); if(k==='eatFood') return eatFood(); if(k==='toTray'){ P.target=[HOTEL.x+1.8,HOTEL.z-HOTEL.d/2+1.5,false]; return; }
+ if(k==='openDoor'){ const w=RS.waiter; w.talk=true; D.presetVars={dish:RS.dish,dishTr:RS.dishTr}; startDialog(w,'npc','rsDeliver'); return; }
+ if(k==='eatBF'){ REST.eating=6; toast('🍳 Kahvaltı ediyorsun… peynir, zeytin, domates, yumurta, simit ve çay!',3000); return; } if(k==='restView'){ REST.view=REST.view?0:1; return; }
+ if(k==='restRoom') return leaveRest('room'); if(k==='restLobby') return leaveRest('lobby'); if(k==='toRestLift'){ P.seat=null; P.target=[REST.lift.x,REST.lift.z-0.6,false]; return; }
+ if(k==='E'&&SK.on) return skateOff(); return _eak29(k); };
+const _cs29=chooseScenario; chooseScenario=function(n){ if(SKATERS.some(b=>b.n===n)) return SK.on?'skateChat':'skate'; return _cs29(n); };
+const _up6_29=updateP6; updateP6=function(dt){ _up6_29(dt); updateSkaters(dt); hotelTick(dt); if(!SK.on&&player.h.skate) player.h.skate=false; };
+// otel haritada daha belirgin + tabela işareti
+(function(){ const H=HOTEL; const bc=new THREE.Sprite(new THREE.SpriteMaterial({map:texBeacon('🏨'),depthTest:false,transparent:true})); bc.scale.set(3.5,3.5,1); bc.position.set(H.x,9,H.z-H.d/2-1); bc.renderOrder=5; scene.add(bc); REST.beacon=bc; })();
+const _bp29=buildPOIs; buildPOIs=function(){ _bp29(); CM.pois.push({n:'🛎️ Sky Tower Otel — resepsiyon (oda, oda servisi, en üst katta kahvaltı)',x:HOTEL.x,z:HOTEL.z,go:[HOTEL.x,HOTEL.z-HOTEL.d/2-1.5],k:'lm'},...SKATERS.map(b=>({n:'🛹 '+b.n.role.tr,x:b.x1/2+b.x2/2,z:b.zA,go:[(b.x1+b.x2)/2,b.zA],k:'big'}))); };
+CM.pois.length=0;
+BADGES.push(['skate','🛹','Kaykaycı',()=>(S.skateTricks||0)>=5],['roomsvc','🛎️','Oda servisi',()=>(S.meals||0)>=1],['bf','🍳','Gökyüzünde kahvaltı',()=>(S.breakfasts||0)>=1]);
+
+// ================= v27: UÇAK — kokpit (sağa/sola bakış, camlardan dışarı), radar (pist nerede), gece pist ışıkları, dış kamera + zoom · GO-KART & F1 park alanları (seç-bin), eğitim sırası, pistte yaya yok, tribünde izleyiciler =================
+// ---------- 1) KOKPİT İÇİ
+(function(){ const g=PLN.g; const dk=M(0x263238), ins=new THREE.MeshBasicMaterial({color:0xe8f5e9});
+ box(0.22,0.3,1.05,dk,1.86,1.82,0,g,false); box(0.4,0.04,1.05,dk,1.78,1.97,0,g,false);
+ for(let i=0;i<6;i++){ const c=new THREE.Mesh(new THREE.CircleGeometry(0.055,18),i%3===1?new THREE.MeshBasicMaterial({color:0x80deea}):ins); c.position.set(1.745,1.84+(i>2?-0.11:0),-0.3+(i%3)*0.14); c.rotation.y=-Math.PI/2; g.add(c); const nd=new THREE.Mesh(geoBox,M(0xd32f2f)); nd.scale.set(0.005,0.045,0.006); nd.position.set(1.742,1.86+(i>2?-0.11:0),-0.3+(i%3)*0.14); nd.rotation.x=i*0.9; g.add(nd); }
+ for(const z of [-0.25,0.25]){ const y=new THREE.Mesh(new THREE.TorusGeometry(0.11,0.015,6,16,Math.PI),dk); y.position.set(1.55,1.86,z); y.rotation.y=-Math.PI/2; y.rotation.z=Math.PI; g.add(y); box(0.25,0.03,0.03,dk,1.66,1.8,z,g,false); }
+ const fr=M(0xeceff1); for(const z of [-0.57,0.57]){ const a=box(0.05,0.75,0.05,fr,1.78,2.2,z,g,false); a.rotation.z=0.45; box(0.05,0.62,0.05,fr,0.25,2.1,z,g,false); box(1.55,0.05,0.05,fr,1.0,2.42,z,g,false); box(1.55,0.05,0.05,fr,1.0,1.8,z,g,false); }
+ for(const z of [-0.25,0.25]){ box(0.1,0.55,0.42,M(0x5d4037),0.85,1.95,z,g,false); box(0.42,0.08,0.42,M(0x5d4037),1.05,1.7,z,g,false); }
+ PLN.ckEye=new THREE.Vector3(1.15,2.24,-0.25); })();
+// ---------- 2) GECE PİST IŞIKLARI
+const RWY={x1:-120,x2:120,z1:-181,z2:-159,zc:-170};
+(function(){ const P=[], C=[]; const add=(x,z,c)=>{ P.push(x,0.25,z); C.push(...c); };
+ for(let x=RWY.x1+2;x<=RWY.x2-2;x+=10){ add(x,RWY.z2-0.4,[1,0.95,0.8]); add(x,RWY.z1+0.4,[1,0.95,0.8]); }
+ for(let z=RWY.z1+1;z<=RWY.z2-1;z+=2.5){ add(RWY.x1,z,[0.1,1,0.3]); add(RWY.x2,z,[1,0.15,0.1]); }
+ for(let x=RWY.x1-6;x>=RWY.x1-86;x-=8) add(x,RWY.zc,[1,1,1]); for(let z=RWY.zc-6;z<=RWY.zc+6;z+=1.5) add(RWY.x1-40,z,[1,1,1]);
+ for(let x=-100;x<=100;x+=10) add(x,RWY.zc,[0.9,0.9,1]);
+ const geo=new THREE.BufferGeometry(); geo.setAttribute('position',new THREE.Float32BufferAttribute(P,3)); geo.setAttribute('color',new THREE.Float32BufferAttribute(C,3));
+ RWY.mat=new THREE.PointsMaterial({size:1.2,map:texDot,vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true}); RWY.pts=new THREE.Points(geo,RWY.mat); RWY.pts.frustumCulled=false; scene.add(RWY.pts);
+ // PAPI (yaklaşma açısı ışıkları)
+ RWY.papi=[]; for(let i=0;i<4;i++){ const m=new THREE.Mesh(new THREE.SphereGeometry(0.35,8,6),new THREE.MeshBasicMaterial({color:0xffffff})); m.position.set(RWY.x1+28,0.4,RWY.z1-3+i*1.2); scene.add(m); RWY.papi.push(m); } })();
+function updateRunway(){ const n=nightF>0.4||W.cur.cloud>0.85||W.cur.rain>0.4; RWY.mat.size=n?2.4:0.7; RWY.mat.opacity=n?1:0.45;
+ const p=PLN; if(DRIVE2.mode==='plane'&&!p.ground){ const d=Math.max(1,p.x-RWY.x1+28)*-1; const ang=Math.atan2(p.y,Math.max(1,(RWY.x1+28)-p.x)); RWY.papi.forEach((m,i)=>{ const th=[0.035,0.045,0.055,0.065][i]; m.material.color.set(ang>th?0xffffff:0xff1744); }); } else RWY.papi.forEach((m,i)=>m.material.color.set(i<2?0xffffff:0xff1744)); }
+// ---------- 3) RADAR: pist nerede?
+_el('canvas','radar'); (function(){ const c=$('radar'); c.width=180; c.height=180; const s=document.createElement('style'); s.textContent='#radar{position:fixed;right:10px;top:176px;width:170px;height:170px;border-radius:50%;z-index:16;display:none;box-shadow:0 2px 10px rgba(0,0,0,.4)}#rdInfo{position:fixed;right:10px;top:350px;width:170px;background:rgba(10,20,40,.78);color:#fff;font-size:12px;border-radius:10px;padding:6px 8px;z-index:16;display:none;line-height:1.4}#zoomBtns{position:fixed;left:12px;top:46%;transform:translateY(-50%);display:none;flex-direction:column;gap:8px;z-index:20}#zoomBtns button,#lookBtns button{width:42px;height:42px;border-radius:50%;border:2px solid rgba(255,255,255,.7);background:rgba(20,30,50,.6);color:#fff;font-size:17px;font-weight:900}#lookBtns{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);display:none;gap:10px;z-index:20}'; document.head.appendChild(s); })();
+_el('div','rdInfo'); _el('div','zoomBtns'); _el('div','lookBtns'); $('zoomBtns').innerHTML='<button id="zIn" title="Yakınlaştır (+)">🔍+</button><button id="zOut" title="Uzaklaştır (−)">🔍−</button>'; $('lookBtns').innerHTML='<button id="lkL" title="Sola bak (Z)">👈</button><button id="lkF" title="İleri bak">⬆️</button><button id="lkR" title="Sağa bak (X)">👉</button><button id="lkU" title="Yukarı/aşağı (C)">↕️</button>';
+function drawRadar(){ const c=$('radar'), g=c.getContext('2d'), W2=180, cx=90, cy=90, p=PLN; const sc=90/700; g.clearRect(0,0,W2,W2);
+ g.fillStyle='rgba(8,24,20,.85)'; g.beginPath(); g.arc(cx,cy,89,0,7); g.fill(); g.strokeStyle='rgba(120,255,170,.35)'; g.lineWidth=1; for(const r of [30,60,89]){ g.beginPath(); g.arc(cx,cy,r,0,7); g.stroke(); }
+ const ch=Math.cos(p.h), sh=Math.sin(p.h); const T2=(x,z)=>{ const dx=x-p.x, dz=z-p.z; const f=dx*ch+dz*(-sh), r=dx*sh+dz*ch; return [cx+r*sc, cy-f*sc]; };
+ g.save(); g.beginPath(); g.arc(cx,cy,88,0,7); g.clip();
+ const pts=[[RWY.x1,RWY.z1],[RWY.x2,RWY.z1],[RWY.x2,RWY.z2],[RWY.x1,RWY.z2]].map(q=>T2(q[0],q[1])); g.fillStyle='#cfd8dc'; g.beginPath(); pts.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1])); g.closePath(); g.fill(); g.strokeStyle='#ffeb3b'; g.lineWidth=2; g.stroke();
+ const th=T2(RWY.x1,RWY.zc); g.fillStyle='#00e676'; g.beginPath(); g.arc(th[0],th[1],4,0,7); g.fill();
+ const ap=T2(RWY.x1-140,RWY.zc); g.setLineDash([4,4]); g.strokeStyle='rgba(0,230,118,.8)'; g.beginPath(); g.moveTo(ap[0],ap[1]); g.lineTo(th[0],th[1]); g.stroke(); g.setLineDash([]);
+ if(p.wp<PLN_WP.length&&!p.ground){ const w=PLN_WP[p.wp]; const q=T2(w.x,w.z); g.strokeStyle='#ffd54f'; g.lineWidth=2; g.beginPath(); g.arc(q[0],q[1],5,0,7); g.stroke(); }
+ const city=T2(65,0); g.fillStyle='rgba(255,255,255,.5)'; g.font='bold 10px Nunito, Arial'; g.fillText('ŞEHİR',city[0]-14,city[1]);
+ g.restore(); g.fillStyle='#fff'; g.beginPath(); g.moveTo(cx,cy-9); g.lineTo(cx-6,cy+7); g.lineTo(cx,cy+3); g.lineTo(cx+6,cy+7); g.closePath(); g.fill();
+ const nP=T2(p.x+600,p.z); const na=Math.atan2(nP[0]-cx,-(nP[1]-cy)); g.fillStyle='#ff5252'; g.font='bold 12px Nunito, Arial'; g.fillText('D',cx+Math.sin(na)*78-4,cy-Math.cos(na)*78+4);
+ const dx=RWY.x1-p.x, dz=RWY.zc-p.z, dist=Math.hypot(dx,dz); let rel=(Math.atan2(-dz,dx)-p.h)*180/Math.PI; rel=((rel+540)%360)-180;
+ $('rdInfo').innerHTML=`🛬 <b>Pist (batı ucu)</b>: ${dist>1000?(dist/1000).toFixed(1)+' km':Math.round(dist)+' m'}<br>${Math.abs(rel)<8?'⬆️ Tam önünde':rel>0?'⬅️ Sola dön '+Math.round(rel)+'°':'➡️ Sağa dön '+Math.round(-rel)+'°'}<br>⛰️ İrtifa: <b>${Math.round(p.y)} m</b> · 💨 ${Math.round(p.v*3.6)} km/s<br><small>🟢 yeşil nokta: iniş başlangıcı · PAPI: 2 beyaz + 2 kırmızı = doğru açı</small>`; }
+// ---------- 4) KAMERA: kokpitte sağa/sola bakış, dış kamerada zoom
+const CK30={zoom:1,look:0,lookT:0,lookP:0,pos:new THREE.Vector3(),init:false};
+addEventListener('keydown',e=>{ if(!DRIVE2.mode||document.activeElement.tagName==='INPUT') return; if(e.code==='KeyZ') CK30.lookT=1.45; if(e.code==='KeyX') CK30.lookT=-1.45; if(e.code==='KeyC') CK30.lookP=CK30.lookP?0:-0.45; if(e.code==='Equal'||e.code==='NumpadAdd') CK30.zoom=clamp(CK30.zoom/1.15,0.35,3); if(e.code==='Minus'||e.code==='NumpadSubtract') CK30.zoom=clamp(CK30.zoom*1.15,0.35,3); });
+addEventListener('keyup',e=>{ if(e.code==='KeyZ'||e.code==='KeyX') CK30.lookT=0; });
+renderer.domElement.addEventListener('wheel',e=>{ if(!DRIVE2.mode) return; CK30.zoom=clamp(CK30.zoom*(1+Math.sign(e.deltaY)*0.12),0.35,3); },{passive:true});
+$('zIn').onclick=()=>{ CK30.zoom=clamp(CK30.zoom/1.2,0.35,3); }; $('zOut').onclick=()=>{ CK30.zoom=clamp(CK30.zoom*1.2,0.35,3); };
+const lkHold=(id,v)=>{ const b=$(id); b.addEventListener('pointerdown',e=>{ e.preventDefault(); CK30.lookT=v; }); ['pointerup','pointerleave','pointercancel'].forEach(k=>b.addEventListener(k,()=>{ CK30.lookT=0; })); }; lkHold('lkL',1.45); lkHold('lkR',-1.45); $('lkF').onclick=()=>{ CK30.lookT=0; CK30.lookP=0; }; $('lkU').onclick=()=>{ CK30.lookP=CK30.lookP?0:-0.45; };
+const _qA=new THREE.Quaternion(), _qB=new THREE.Quaternion(), _eY=new THREE.Euler(), _v30=new THREE.Vector3(), _v30b=new THREE.Vector3();
+const _uc30=updateCamera; updateCamera=function(dt){ _uc30(dt); const m=DRIVE2.mode; if(!m||D.camOv) { CK30.init=false; return; } const cock=CAM.mode==='cockpit'||CAM.mode==='hood'; CK30.look=lerp(CK30.look,CK30.lookT,Math.min(1,dt*5));
+ if(m==='plane'){ const p=PLN;
+  if(cock){ const g=p.g; g.updateMatrix(); _v30.copy(p.ckEye).applyMatrix4(g.matrix); _eY.set(CK30.lookP*0.8+0.02,-Math.PI/2+CK30.look,0,'YXZ'); _qB.setFromEuler(_eY); _qA.copy(g.quaternion).multiply(_qB);
+   camera.position.set(_v30.x,_v30.y,wz(_v30.z)); camera.quaternion.copy(_qA); camera.updateMatrixWorld(); return; }
+  const fx=Math.cos(p.h)*Math.cos(p.pitch), fz=-Math.sin(p.h)*Math.cos(p.pitch); const zz=CK30.zoom; _v30.set(p.x-fx*16*zz+Math.sin(p.h)*CK30.look*10*zz,p.y+5*Math.pow(zz,0.8),p.z-fz*16*zz+Math.cos(p.h)*CK30.look*10*zz);
+  if(!CK30.init){ CK30.pos.copy(_v30); CK30.init=true; } CK30.pos.lerp(_v30,1-Math.exp(-dt*4)); camera.position.set(CK30.pos.x,Math.max(0.6,CK30.pos.y),wz(CK30.pos.z)); camera.lookAt(p.x+fx*12,p.y+1.5,wz(p.z+fz*12)); camera.updateMatrixWorld(); return; }
+ if(cock) return; const zz=CK30.zoom;
+ if(m==='drone'){ const d=DRN, f=[Math.cos(d.h),-Math.sin(d.h)]; _v30.set(d.x-f[0]*4.5*zz,d.y+1.8*Math.pow(zz,0.8),d.z-f[1]*4.5*zz); if(!CK30.init){ CK30.pos.copy(_v30); CK30.init=true; } CK30.pos.lerp(_v30,1-Math.exp(-dt*5)); camera.position.set(CK30.pos.x,CK30.pos.y,wz(CK30.pos.z)); camera.lookAt(d.x,d.y,wz(d.z)); camera.updateMatrixWorld(); return; }
+ if(m==='surf') return; const d=DR2; if(!d.veh||!d.spec) return; const f=[Math.cos(d.h),-Math.sin(d.h)], c=d.spec.cam; _v30.set(d.x-f[0]*c[0]*zz,c[1]*Math.pow(zz,0.8),d.z-f[1]*c[0]*zz);
+ if(!CK30.init){ CK30.pos.copy(_v30); CK30.init=true; } CK30.pos.lerp(_v30,1-Math.exp(-dt*7)); camera.position.set(CK30.pos.x,CK30.pos.y,wz(CK30.pos.z)); camera.lookAt(d.x+f[0]*6,0.8,wz(d.z+f[1]*6)); camera.updateMatrixWorld(); };
+
+// ---------- 5) GO-KART ve F1 PARK ALANLARI (seç-bin)
+const PARKED=[]; const PICK={mode:null,col:null,car:null};
+function parkCar(mode,x,z,h,col,name){ const v=mode==='kart'?makeKart(col):makeF1(col); v.g.position.set(x,0,z); v.g.rotation.y=h; const o={mode,v,x,z,col,name}; PARKED.push(o); addCol(x-(mode==='kart'?0.9:2.4),z-(mode==='kart'?0.6:0.9),x+(mode==='kart'?0.9:2.4),z+(mode==='kart'?0.6:0.9)); return o; }
+[['yeşil',0x43a047],['kırmızı',0xe53935],['mavi',0x1e88e5],['sarı',0xfdd835],['turuncu',0xff6d00],['mor',0x8e24aa]].forEach(([n,c],i)=>parkCar('kart',186+i*3.2,-101.5,Math.PI/2,c,n));
+[['kırmızı',0xd32f2f],['gümüş',0xb0bec5],['siyah',0x212121],['turkuaz',0x00acc1]].forEach(([n,c],i)=>parkCar('f1',246+i*6.2,-84.4,0,c,n));
+(function(){ box(22,0.06,4.2,M(0x455a64),194,0.03,-101.5,null,false); signBoard(194,2.8,-98.6,'GO-KART PARK ALANI','CHOOSE YOUR KART','#ef6c00',Math.PI,4);
+ box(26,0.06,3.4,M(0x455a64),255.3,0.03,-84.4,null,false); signBoard(266,2.8,-82.2,'FORMÜL PİT ALANI','CHOOSE YOUR CAR','#263238',Math.PI,4); })();
+function nearParked(){ const P=player; let best=null,bd=3; PARKED.forEach(o=>{ if(!o.v.g.visible) return; const d=Math.hypot(o.x-P.x,o.z-P.z); if(d<bd){ bd=d; best=o; } }); return best; }
+const _vf30=vehFor; vehFor=function(mode,col){ if(PICK.col!=null&&PICK.mode===mode){ col=PICK.col; PICK.col=null; if(PICK.car) PICK.car.v.g.visible=false; } return _vf30(mode,col); };
+const _ex30=exitDrive2; exitDrive2=function(){ _ex30(); PARKED.forEach(o=>o.v.g.visible=true); PICK.car=null; CK30.init=false; };
+const _od30=offerDrive; offerDrive=function(mode){ if((mode==='kart'||mode==='f1')&&!PICK.active){ S.ms[mode+'Trained']=true; save();
+  toast(mode==='kart'?'✅ Go-kart eğitimin tamam! Şimdi <b>GO-KART PARK ALANI</b>\'na git, istediğin renkteki karta yaklaş ve “Bu go-karta bin” de. <i>En az 1 tur at → formül aracı açılır.</i>':'✅ Formül eğitimin tamam! <b>FORMÜL PİT ALANI</b>\'ndan istediğin arabayı seç.',7000); return; } return _od30(mode); };
+function pickCar(o){ const P=player; if(!S.ms.desk){ toast('🎫 Önce kayıt ofisinde (Ece) kayıt ol.',3000); return; }
+ if(o.mode==='kart'&&!S.ms.kartTrained){ toast('🎓 Önce <b>Burak</b>\'tan go-kart eğitimi al (turuncu ofis).',3500); return; }
+ if(o.mode==='f1'){ if(!(S.ms.kartLaps>=1||S.ms.kartRace)){ toast('🏎️ Formül aracı için önce go-kartla <b>en az 1 tam tur</b> atmalısın.',4000); return; } if(!S.ms.f1Trained){ toast('🎓 Önce <b>Selin</b>\'den formül aracı eğitimi al (gri pit ofisi).',3500); return; } }
+ PICK.mode=o.mode; PICK.col=o.col; PICK.car=o; PICK.active=true; _od30(o.mode); PICK.active=false; }
+// eğitim bayrakları (diyalog bitince)
+const _ead30=extraAfterDialog; extraAfterDialog=function(sc,n){ if(!D.closed){ if(sc==='kartBrief') S.ms.kartTrained=true; if(sc==='f1Eng') S.ms.f1Trained=true; save(); } _ead30(sc,n); };
+// tur sayısı bildirimi
+let lastKartLaps=S.ms.kartLaps||0;
+// ---------- 6) PİSTTE YAYA YOK; TRİBÜNDE İZLEYİCİLER
+function bleachers(x,z,len,rows,yaw,k){ const g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=yaw; scene.add(g); for(let r=0;r<rows;r++){ box(len,0.45,0.9,M(r%2?0x90a4ae:0xb0bec5),0,0.22+r*0.45,-r*0.9,g,false); box(len,0.45*(r+1),0.9,M(0x78909c),0,0.22*(r+1),-r*0.9-0.05,g,false); }
+ const c=Math.cos(yaw), s=Math.sin(yaw); const toW=(lx,lz)=>[x+lx*c+lz*s, z-lx*s+lz*c]; const a=toW(-len/2,0.5), b2=toW(len/2,-rows*0.9); addCol(Math.min(a[0],b2[0]),Math.min(a[1],b2[1]),Math.max(a[0],b2[0]),Math.max(a[1],b2[1]));
+ for(let i=0;i<k;i++){ const r=i%rows, lx=-len/2+0.8+((i*1.7)%(len-1.6)); const p=toW(lx,-r*0.9); const n=addNPC({role:R('İzleyici','Spectator','📣'),ctx:'casual',params:{a:'watching the race',at:'yarışı izlemeyi'},x:p[0],z:p[1],y:0.45*(r+1)+0.02,yaw:yaw,anim:'sit',look:{female:Math.random()<.5,shirt:pick([0xe53935,0x1e88e5,0x43a047,0xfdd835,0xff6d00,0xffffff])},outdoor:true}); n.noCrowd=true; n.noRain=true; n.y=0.45*(r+1)+0.02; } }
+bleachers(162,-100.4,16,3,Math.PI,12); bleachers(310,-83.2,22,3,Math.PI,14); bleachers(230,-128,14,3,-Math.PI/2,8);
+// pist üstündeki yaya/hayvanları kenara al
+function onTrack(x,z){ for(const tr of [KART,CIRC]){ if(!tr) continue; let md=1e9; for(const q of tr.S){ const d=Math.hypot(q.x-x,q.z-z); if(d<md) md=d; } if(md<tr.width/2+1.5) return true; } return false; }
+(function(){ npcs.forEach(n=>{ if(n.x>140&&n.x<340&&n.z<-72&&n.z>-260&&!n.noCrowd&&onTrack(n.x,n.z)){ n.hidden=true; n.talk=false; } }); })();
+const _rel30=relocateExtra; relocateExtra=function(n){ if(player.zone===ZONES.moto){ n.hidden=true; n.crowdOff=true; return false; } return _rel30(n); };
+// ---------- eylemler ve güncelleme
+const _ea30=extraActions; extraActions=function(items){ _ea30(items); const P=player; if(D.active||DRIVE2.mode||P.car) return;
+ if(P.zone===ZONES.moto){ const o=nearParked(); if(o) items.unshift([(o.mode==='kart'?'🏎️ Bu go-karta bin (':'🏁 Bu formül aracına bin (')+o.name+')','pickCar']); } };
+const _eak30=extraActionKey; extraActionKey=function(k){ if(k==='pickCar'){ const o=nearParked(); if(o) pickCar(o); return; } return _eak30(k); };
+const _up6_30=updateP6; updateP6=function(dt){ _up6_30(dt); updateRunway(); const m=DRIVE2.mode; const pl=m==='plane'&&PLN.phase!=='atc'&&PLN.phase!=='atc2';
+ $('radar').style.display=pl?'block':'none'; $('rdInfo').style.display=pl?'block':'none'; if(pl) drawRadar();
+ $('zoomBtns').style.display=m&&m!=='surf'?'flex':'none'; $('lookBtns').style.display=m==='plane'&&(CAM.mode==='cockpit'||CAM.mode==='hood')?'flex':'none';
+ if((S.ms.kartLaps||0)>lastKartLaps){ lastKartLaps=S.ms.kartLaps; if(lastKartLaps===1) setTimeout(()=>toast('🎉 İlk go-kart turunu tamamladın! Artık <b>Selin</b>\'den formül aracı eğitimi alabilirsin.',5000),2400); } };
+// ipucu
+const _sd30=startDrive2; startDrive2=function(mode,race){ CK30.init=false; _sd30(mode,race); setTimeout(()=>toast('🎥 V: iç/dış kamera · 🔍 fare tekerleği ya da +/− ile yakınlaş/uzaklaş',3500),6200); };
+
+// ================= v28: otel akışı (resepsiyonist Derya, check-in → oda → uyku → kahvaltı → check-out) · polis: dur ya da kaç · boşta dikilen insan yok =================
+// ---------- 1) OTEL: resepsiyonist belirgin + check-out
+RECEP.role=R('Resepsiyonist Derya','Receptionist Derya','🛎️'); if(RECEP.label&&RECEP.label.material&&typeof makeLabel==='function'){ try{ scene.remove(RECEP.label); RECEP.label=makeLabel(RECEP.role.tr); scene.add(RECEP.label); }catch(e){} }
+(function(){ const bc=new THREE.Sprite(new THREE.SpriteMaterial({map:texBeacon('🛎️'),depthTest:false,transparent:true})); bc.scale.set(1.3,1.3,1); bc.position.set(RECEP.x,3.3,RECEP.z); bc.renderOrder=6; scene.add(bc); RECEP.bc=bc;
+ const sg=new THREE.Mesh(geoPlane,new THREE.MeshBasicMaterial({map:texSign('RESEPSİYON → Derya','RECEPTION · CHECK-IN / CHECK-OUT','#5d4037','#fff'),side:THREE.DoubleSide})); sg.scale.set(3.6,0.9,1); sg.position.set(HOTEL.x,2.8,HOTEL.z-HOTEL.d/2+0.6); scene.add(sg); })();
+SC.hotelCheckOut={topic:'Konu: Resepsiyonist Derya\'ya anahtar kartını teslim edip otelden ayrıl (check-out). Konaklamanı anlat.',steps:[
+ N(["Good morning! Check-out?","Günaydın! Çıkış mı?"],["Good morning! Are you checking out today?","Günaydın! Bugün çıkış mı yapıyorsunuz?"],["Good morning! Are you checking out today, or would you like to stay another night?","Günaydın! Bugün çıkış mı yapıyorsunuz, yoksa bir gece daha kalmak ister misiniz?"],["Good morning! Will you be checking out today, or staying on another night?","Günaydın! Bugün çıkış mı yapacaksınız, yoksa bir gece daha mı kalacaksınız?"]),
+ Y('Çıkış yapmak istediğini söyle; anahtarı uzat.',["Yes. Here is my key.","Evet. Anahtarım burada."],["Yes, I'm checking out. Here's my key card.","Evet, çıkış yapıyorum. Anahtar kartım burada."],["Yes, I'd like to check out, please. Here's my key card.","Evet, çıkış yapmak istiyorum. Anahtar kartım burada."],["Yes, I'm checking out this morning — here's the key card.","Evet, bu sabah çıkış yapıyorum — anahtar kartı burada."]),
+ N(["Thank you! Was it good?","Teşekkürler! İyi miydi?"],["Thank you. How was your stay?","Teşekkürler. Konaklamanız nasıldı?"],["Thank you very much. How was your stay with us?","Çok teşekkürler. Bizde konaklamanız nasıldı?"],["Thank you. And how did you find your stay?","Teşekkürler. Konaklamanızı nasıl buldunuz?"]),
+ Y('Çok güzel olduğunu, kahvaltının harika olduğunu söyle.',["Very good! Nice breakfast!","Çok iyi! Güzel kahvaltı!"],["It was great! The breakfast was delicious.","Harikaydı! Kahvaltı çok lezzetliydi."],["It was wonderful — the view from the room and the breakfast were amazing!","Muhteşemdi — odanın manzarası ve kahvaltı inanılmazdı!"],["Wonderful, thanks — the view was stunning and the breakfast superb.","Harikaydı, teşekkürler — manzara büyüleyiciydi, kahvaltı da enfes."]),
+ N(["Great! Everything is paid.","Harika! Her şey ödendi."],["I'm glad! Everything is already paid.","Sevindim! Her şey zaten ödendi."],["I'm so glad to hear that! Your bill is already paid. Would you like a taxi?","Bunu duyduğuma çok sevindim! Hesabınız zaten ödendi. Taksi ister misiniz?"],["Delighted to hear it! Your account's settled — can I call you a taxi?","Duyduğuma çok sevindim! Hesabınız kapandı — size taksi çağırayım mı?"]),
+ Y('Teşekkür et; şehirde yürüyeceğini söyle.',["No, thank you. Bye!","Hayır, teşekkürler. Hoşça kalın!"],["No, thanks. I'll walk. Goodbye!","Hayır, teşekkürler. Yürüyeceğim. Hoşça kalın!"],["No, thank you — I'll walk into the city. Have a nice day!","Hayır, teşekkürler — şehre yürüyeceğim. İyi günler!"],["That's kind, but I'll stroll into town. Have a lovely day!","Naziksiniz ama şehre yürüyeceğim. İyi günler!"]),
+ Object.assign(N(["Bye! Come again!","Hoşça kalın! Yine bekleriz!"],["Goodbye! We hope to see you again!","Hoşça kalın! Sizi yine bekleriz!"],["Have a wonderful day, and we hope to see you again soon!","Harika bir gün geçirin, sizi yakında yine bekleriz!"],["Have a lovely day — we look forward to welcoming you back!","İyi günler — sizi yeniden ağırlamayı dört gözle bekliyoruz!"]),{act:'checkOut'})
+]};
+const _cs31=chooseScenario; chooseScenario=function(n){ if(n===RECEP&&S.hotelKey&&((S.dayCount||0)>(S.checkinDay||0)||S.wantOut)) return 'hotelCheckOut'; return _cs31(n); };
+const _exA31=extraAct; extraAct=function(a,n,v,P){ if(a==='hotelKey'){ S.checkinDay=S.dayCount||0; save(); setTimeout(()=>toast('🗺️ <b>Otel akışı:</b> 1) Lobideki asansörle 24. kattaki odana çık · 2) Odada dinlen, 📞 resepsiyonu ara (yemek, temizlik, uyandırma) · 3) Yatağa yat → sabaha kadar uyu · 4) En üst kat Sky Restaurant\'ta kahvaltı · 5) Lobiye in, anahtarı Derya\'ya teslim et (check-out).',9000),2500); }
+ if(a==='checkOut'){ S.hotelKey=0; S.wantOut=false; S.checkouts=(S.checkouts||0)+1; save(); checkBadges(); try{ flyProp('card',P.h.rHand,n.h.rHand,0.6); }catch(e){} setTimeout(()=>toast('👋 Check-out tamam! Anahtarı teslim ettin. Şehirde konuşmaya ve iş yapmaya devam! (Tekrar kalmak istersen Derya\'dan yeniden oda tutabilirsin.)',5000),600); return 0.5; }
+ return _exA31(a,n,v,P); };
+let hotelTold=false;
+const _ea31=extraActions; extraActions=function(items){ _ea31(items); const P=player; if(D.active||P.car||ROOM.active||(typeof REST!=='undefined'&&REST.active)) return;
+ const dR=Math.hypot(P.x-RECEP.x,P.z-RECEP.z); if(dR<3.2){ if(S.hotelKey) items.unshift(['🔑 Anahtarı teslim et (check-out)','checkOutTalk'],['🛎️ Derya ile konuş','recTalk']); else items.unshift(['🛎️ Derya ile konuş — oda tut','recTalk']); } };
+const _eak31=extraActionKey; extraActionKey=function(k){ if(k==='recTalk'){ S.wantOut=false; startDialog(RECEP,'npc',chooseScenario(RECEP)); return; } if(k==='checkOutTalk'){ S.wantOut=true; startDialog(RECEP,'npc','hotelCheckOut'); return; } return _eak31(k); };
+// ---------- 2) POLİS: otomatik durdurma yok — kenara çek ya da kaç
+_el('div','polBar'); (function(){ const s=document.createElement('style'); s.textContent='#polBar{position:fixed;left:50%;top:150px;transform:translateX(-50%);background:rgba(13,30,80,.92);color:#fff;border:2px solid #ff1744;border-radius:16px;padding:10px 14px;z-index:40;display:none;text-align:center;font-size:14px;box-shadow:0 0 18px rgba(255,23,68,.6)}#polBar button{margin:6px 4px 0;padding:8px 14px;border-radius:12px;border:0;font-weight:900;font-size:14px;cursor:pointer}#polStop{background:#ffd600;color:#222}#polRun{background:#ff1744;color:#fff}'; document.head.appendChild(s); })();
+const PCH={on:false,t:0,far:0,fled:false,near:0};
+function polBar(show){ const b=$('polBar'); if(!show){ b.style.display='none'; return; } const car=!!player.car; b.innerHTML=`🚨 <b>Polis seni durdurmak istiyor!</b> ${PCH.fled?'<br><small>Kaçıyorsun — polis peşinde! Uzaklaşırsan kurtulursun, yakalanırsan ceza 2 katı.</small>':'<br><small>Ne yapacaksın?</small>'}<br><button id="polStop">🛑 ${car?'Kenara çek, dur':'Dur, bekle'}</button><button id="polRun">${car?'🚗💨 Gazla, kaç!':'🏃 Koş, kaç!'}</button>`; b.style.display='block';
+ $('polStop').onclick=()=>{ PCH.choice='stop'; if(player.car) MOTO.pull=true; else { player.target=null; player.runMode=false; } toast(car?'🛑 Kenara çekiyorsun… Polis yanına geliyor.':'🧍 Bekliyorsun… Polis yanına geliyor.',2500); };
+ $('polRun').onclick=()=>{ PCH.choice='run'; PCH.fled=true; MOTO.pull=false; if(!player.car) player.runMode=true; toast(car?'💨 Gazla! Polisten uzaklaş!':'🏃 Koş! (Shift ile daha hızlı)',2000); }; }
+const _sp31=startPolice; startPolice=function(mode){ const was=MOTO.active; _sp31(mode); if(MOTO.active&&!was){ PCH.on=true; PCH.t=0; PCH.far=0; PCH.near=0; PCH.fled=false; PCH.choice=null; MOTO.pull=false; polBar(true); } };
+function pSpeed(){ const c=player.car; if(c) return Math.abs(c.v||0); const P=player; const d=Math.hypot(P.x-(PCH.px??P.x),P.z-(PCH.pz??P.z)); return d; }
+const _uPol31=updatePolice; updatePolice=function(dt){ const P=player;
+ if(MOTO.active&&PCH.on&&(MOTO.phase==='ride'||MOTO.phase==='chase')){ PCH.t+=dt; const c=P.car; const tx=c?c.x:P.x, tz=c?c.z:P.z; const mv=c?Math.abs(c.v):Math.hypot(P.x-(PCH.px??P.x),P.z-(PCH.pz??P.z))/Math.max(dt,1e-3); PCH.px=P.x; PCH.pz=P.z;
+  const d=Math.hypot(tx-MOTO.x,tz-MOTO.z);
+  // durursa → normal akış (polis yanına gelir)
+  const stopped=mv<(c?0.5:0.3); if(stopped&&d<26&&PCH.choice!=='run'){ const fx=c?Math.cos(c.h):1; MOTO.stop=c?[c.x-Math.sign(fx||1)*4.5,c.z]:[P.x+(MOTO.x<P.x?-3:3),P.z]; MOTO.phase='ride'; PCH.on=false; polBar(false); return _uPol31(dt); }
+  if(PCH.choice==='stop'&&stopped){ MOTO.stop=c?[c.x-4.5*Math.sign(Math.cos(c.h)||1),c.z]:[P.x+(MOTO.x<P.x?-3:3),P.z]; }
+  // kovalamaca
+  MOTO.phase='chase'; if(mv>(c?3:1.2)&&d>6&&PCH.choice!=='stop'){ PCH.fled=true; }
+  const vmax=c?14.2:6.2; const tgx=tx-(c?Math.cos(c.h)*5:0), tgz=tz+(c?Math.sin(c.h)*5:0); const ddx=tgx-MOTO.x, ddz=tgz-MOTO.z, dd=Math.hypot(ddx,ddz)||1; const sp=Math.min(vmax,dd*1.4+2);
+  MOTO.x+=ddx/dd*Math.min(dd,sp*dt); MOTO.z+=ddz/dd*Math.min(dd,sp*dt); MOTO.h=Math.atan2(-ddz,ddx); if(Math.random()<dt*0.5) sfxSiren();
+  if(d<(c?7:2.4)&&mv<(c?2.5:2.5)){ PCH.near+=dt; } else PCH.near=Math.max(0,PCH.near-dt*0.5);
+  if(PCH.near>1.6){ toast('🚔 Yakalandın! Kaçmaya çalıştığın için ceza iki katı.',3000); MOTO.stop=c?[c.x-4.5*Math.sign(Math.cos(c.h)||1),c.z]:[P.x+(MOTO.x<P.x?-1.5:1.5),P.z]; MOTO.phase='ride'; MOTO.pull=true; PCH.on=false; polBar(false); if(!c) player.target=null; return _uPol31(dt); }
+  if(d>(c?85:40)){ PCH.far+=dt; if(PCH.far>5){ MOTO.active=false; MOTO.g.visible=false; MOTO.cool=45; PCH.on=false; polBar(false); S.escapes=(S.escapes||0)+1; save(); toast('😮‍💨 Polisten kaçtın! Ama dikkat: bir dahaki sefere kurallara uy. <i>You got away… this time!</i>',4500); return; } } else PCH.far=0;
+  if(Math.floor(PCH.t*2)!==Math.floor((PCH.t-dt)*2)) polBar(true);
+  const bl=Math.sin(T*14)>0?1:0; MOTO.lb.emissiveIntensity=bl*3; MOTO.lr.emissiveIntensity=(1-bl)*3; MOTO.rider.t+=dt; animHuman(MOTO.rider,dt); MOTO.g.position.set(MOTO.x,0,MOTO.z); MOTO.g.rotation.y=MOTO.h; MOTO.cool=Math.max(0,MOTO.cool-dt); return; }
+ if(!MOTO.active&&PCH.on){ PCH.on=false; polBar(false); }
+ _uPol31(dt); if(MOTO.active&&(MOTO.phase==='away'||MOTO.phase==='back')){ MOTO.pull=false; } if(!MOTO.active) MOTO.pull=false; };
+// kaçıp yakalanırsa ceza 2 katı
+const _sd31=startDialog; startDialog=function(n,who,sc){ if((sc==='fineTaxi'||sc==='fineWalk')&&PCH.fled&&D.presetVars&&D.presetVars.total){ D.presetVars.total*=2; D.presetVars.warn=false; PCH.fled=false; } return _sd31.apply(this,arguments); };
+// ---------- 3) BOŞTA DİKİLEN İNSAN YOK: fazladan kişiler dolaşsın, yolda kimse durmasın
+function isRoadAt(x,z){ if(!player.zone&&Math.abs(z)<6.3&&x>-140&&x<276) return true; if(typeof inRoad16==='function'&&inRoad16(x,z)) return true; if(typeof GRID!=='undefined'){ for(const c of GRID.cs) if(Math.abs(x-c.x)<6.3&&z>-62&&z<60) return true; } return false; }
+function wanderTarget(n){ const P=player; const Z=P.zone; for(let t=0;t<10;t++){ const a=Math.random()*Math.PI*2, d=rnd(6,22); let x=n.x+Math.cos(a)*d, z=n.z+Math.sin(a)*d;
+  if(Math.hypot(x-P.x,z-P.z)>55) { x=P.x+(x-P.x)*0.6; z=P.z+(z-P.z)*0.6; }
+  if(Z){ if(x<Z.x1+1||x>Z.x2-1||z<Z.z1+1||z>Z.z2-1) continue; } else { const q=cityClamp(x,z); if(Math.hypot(q[0]-x,q[1]-z)>0.5) continue; }
+  if(isRoadAt(x,z)) continue; const q2=collide(x,z,0.45); if(Math.hypot(q2[0]-x,q2[1]-z)>0.05) continue; return [x,z]; } return null; }
+const _rel31=relocateExtra; relocateExtra=function(n){ const ok=_rel31(n); if(ok&&n.beh==='static'){ n.beh='wander'; n.state='scripted'; n.scAnim='walk'; n.wt=null; n.wwait=0; } return ok; };
+function updateWanderers(dt){ for(const n of CRW.extra){ if(n.hidden) continue; if(n.beh==='static'&&n.state!=='talking'&&n.state!=='listen'){ n.beh='wander'; n.state='scripted'; n.wt=null; n.wwait=rnd(0,1); } if(n.beh!=='wander') continue; if(n.state==='talking'||n.state==='listen'){ continue; } if(n.state!=='scripted'){ n.state='scripted'; }
+  if(n.wwait>0){ n.wwait-=dt; n.scAnim='idle'; continue; } if(!n.wt){ n.wt=wanderTarget(n); if(!n.wt){ n.wwait=1; continue; } }
+  const arrived=stepTo(n,n.wt[0],n.wt[1],n.speed||1.15,dt); n.scAnim=arrived?'idle':'walk'; n.home.x=n.x; n.home.z=n.z; if(arrived){ n.wt=null; n.wwait=rnd(0.6,2.2); } } }
+// yolda / meydanda uzun süre dikilen sıradan yayaları kenara/yürüyüşe al
+function unstuckTick(){ for(const n of npcs){ if(n.hidden||n.noCrowd||n.sc||n.ctx!=='casual'||n.sitting||n.state==='talking'||n.state==='listen'||n.state==='scripted'||n.beh==='football'||n.y>0.5) continue; if(n.dist>70) continue;
+  if(isRoadAt(n.x,n.z)&&!(typeof CROSS!=='undefined'&&CROSS.some(cx=>Math.abs(n.x-cx)<2.4))){ n._roadT=(n._roadT||0)+3; if(n._roadT>=6){ n._roadT=0; if(!player.zone&&n.x>-140&&n.x<276&&Math.abs(n.z)<6.3){ const sd=n.z>=0?1:-1; n.z=sd*8; if(n.home){ n.home.z=n.z; } if(n.beh==='walker'){ n.path=[]; } } else if(n.beh==='static'){ n.hidden=true; n.crowdOff=true; } } } else n._roadT=0; } }
+let unT=0; const _up6_31=updateP6; updateP6=function(dt){ _up6_31(dt); updateWanderers(dt); unT-=dt; if(unT<=0){ unT=3; unstuckTick(); }
+ const P=player; if(!P.car&&!ROOM.active&&Math.hypot(P.x-HOTEL.x,P.z-(HOTEL.z-HOTEL.d/2))<9&&!hotelTold){ hotelTold=true; toast(S.hotelKey?'🛎️ Sky Tower lobisi: odana çıkmak için asansör, çıkış için resepsiyonist <b>Derya</b>.':'🛎️ Sky Tower lobisine girdin. Masadaki resepsiyonist <b>Derya</b>\'ya git, oda tut (450 ₺).',5000); }
+ if(Math.hypot(P.x-HOTEL.x,P.z-HOTEL.z)>40) hotelTold=false; RECEP.bc.position.y=3.3+Math.sin(T*2)*0.12; };
+BADGES.push(['checkout','🧳','Otel misafiri (check-out)',()=>(S.checkouts||0)>=1]);
+
+// ================= v29: haritanın her yerine git (araçtayken bile) · şehirle bölgeler arasında yürüyerek geçiş · sertifika alınca araçlar serbest · drone bırak / her yerde uçur =================
+// ---------- 1) Bölgeler arası serbest geçiş (yürüyerek / bisiklet / kaykay)
+const CORR=[{x1:-128,x2:128,z1:-96,z2:-78},{x1:142,x2:338,z1:-76,z2:-64},{x1:-172,x2:-118,z1:-48,z2:14}];
+function inOpen(x,z){ if(zoneOf(x,z)) return true; return CORR.some(c=>x>=c.x1&&x<=c.x2&&z>=c.z1&&z<=c.z2); }
+const _cc32=cityClamp; cityClamp=function(x,z){ if(inOpen(x,z)) return [x,z]; return _cc32(x,z); };
+const ZLIST=()=>Object.values(ZONES);
+const _up32=updatePlayer; updatePlayer=function(dt){ const P=player; const zz=P.zone&&ZLIST().includes(P.zone); if(zz) P.zone=null; _up32(dt);
+ if((zz||!P.zone)&&!P.zone){ const k=zoneOf(P.x,P.z); if(k){ P.zone=ZONES[k]; P.zk=k; } } };
+// ---------- 2) Işınlanma: her yerden, her durumda (önce araçtan / odadan otomatik çık)
+function exitEverything(){ let wait=0; const P=player;
+ try{ if(D.active){ D.closed=true; endDialog(); D.closed=false; } }catch(e){}
+ try{ const m=DRIVE2.mode; if(m){ if(m==='drone') endDrone(!!DRN.free); else if(m==='plane'){ endPlane(false); PLN.phase='parked'; } else if(m==='surf') endSurf(); else exitDrive2(); wait=Math.max(wait,200); } }catch(e){ DRIVE2.mode=null; }
+ try{ if(P.car){ const c=P.car; c.v=0; if(c.vtype&&c.vtype!=='taxi') actionKey('E'); else exitTaxi(); if(P.car){ c.parked=true; P.car=null; $('taxiHud').style.display='none'; } } }catch(e){ P.car=null; }
+ try{ if(typeof BOAT!=='undefined'&&BOAT.cur){ leaveBoat(); wait=900; } }catch(e){}
+ try{ if(typeof BAL!=='undefined'&&BAL.on){ endBalloon(); wait=900; } }catch(e){}
+ try{ if(typeof SK!=='undefined'&&SK.on) skateOff(); }catch(e){}
+ try{ if(typeof INT!=='undefined'&&INT.cur){ exitMosque(); wait=900; } }catch(e){}
+ try{ if(typeof REST!=='undefined'&&REST.active){ leaveRest('lobby'); wait=900; } }catch(e){}
+ try{ if(ROOM.active){ leaveRoom(); wait=900; } }catch(e){}
+ try{ if(GAME.active){ GAME.active=false; } }catch(e){}
+ return wait; }
+const _tp32=teleportTo; teleportTo=function(x,z,name){ const busy=player.car||DRIVE2.mode||GAME.active||ROOM.active||(typeof REST!=='undefined'&&REST.active)||(typeof BOAT!=='undefined'&&BOAT.cur)||(typeof BAL!=='undefined'&&BAL.on)||(typeof INT!=='undefined'&&INT.cur)||(typeof SK!=='undefined'&&SK.on);
+ if(typeof JAIL!=='undefined'&&JAIL.active){ toast('🚫 Nezarettesin — önce çık.',2500); return; }
+ if(busy){ closeCityMap(); const w=exitEverything(); toast('🚶 Araçtan/odadan çıktın, oraya gidiyorsun…',1800); setTimeout(()=>_tp32(x,z,name),w+250); return; } return _tp32(x,z,name); };
+// ---------- 3) Sertifika / eğitim bir kez yeter
+// uçak: ilk uçuştan sonra kule telsizi otomatik (izin hemen verilir)
+const _sd32=startDialog; startDialog=function(n,who,sc){ if((sc==='atcTaxi'||sc==='atcTakeoff')&&(S.fly.flights||0)>=1){ const f=D.pendingOnEnd; D.pendingOnEnd=null; if(f) f(); toast(sc==='atcTaxi'?'🗼 Kule: “TC-ABC, taxi to holding point runway 27.” (Sertifikan var — telsiz otomatik)':'🗼 Kule: “TC-ABC, cleared for take-off!” — gaz ver, kalk!',4000); sayEn(sc==='atcTaxi'?'Taxi to holding point, runway two seven.':'Cleared for take-off!'); return; } return _sd32.apply(this,arguments); };
+// drone: sertifika aldıysan her yerde uçur, istediğin an bırak
+const _stD32=startDrone; startDrone=function(free){ const P=player, px=P.x, pz=P.z, here=free&&P.zone!==ZONES.air; _stD32(free); if(here){ P.x=px; P.z=pz; DRN.x=px+Math.sin(P.yaw)*2; DRN.z=pz+Math.cos(P.yaw)*2; DRN.homeX=DRN.x; DRN.homeZ=DRN.z; } else { DRN.homeX=AIR.pad.x; DRN.homeZ=AIR.pad.z; } };
+const _eD32=endDrone; endDrone=function(ok){ const hx=DRN.homeX, hz=DRN.homeZ; _eD32(ok); if(hx!==undefined&&DRN.free!==undefined){ DRN.x=AIR.pad.x; DRN.z=AIR.pad.z; DRN.g.position.set(DRN.x,DRN.y,DRN.z); } };
+// motosiklet & drift: park alanında seç-bin
+[['mavi',0x1565c0],['kırmızı',0xc62828],['siyah',0x212121],['yeşil',0x2e7d32]].forEach(([n,c],i)=>{ const v=makeMoto(c); const x=274+i*3.4, z=-84.4; v.g.position.set(x,0,z); v.g.rotation.y=0; PARKED.push({mode:'moto',v,x,z,col:c,name:n}); addCol(x-1,z-0.4,x+1,z+0.4); });
+[['beyaz',0xffffff],['turuncu',0xff6d00],['mor',0x6a1b9a]].forEach(([n,c],i)=>{ const v=makeDriftCar(c); const x=172+i*5.5, z=-209.5; v.g.position.set(x,0,z); v.g.rotation.y=0; PARKED.push({mode:'drift',v,x,z,col:c,name:n}); addCol(x-2.2,z-1,x+2.2,z+1); });
+signBoard(283,2.8,-82.2,'MOTOSİKLET PARKI','CHOOSE YOUR BIKE','#212121',Math.PI,3.6); signBoard(178,2.8,-207.2,'DRİFT ARABALARI','CHOOSE YOUR CAR','#6a1b9a',Math.PI,3.6);
+const _od32=offerDrive; offerDrive=function(mode){ if((mode==='moto'||mode==='drift')&&!PICK.active){ S.ms[mode+'Trained']=true; save(); toast(mode==='moto'?'✅ Motosiklet eğitimin tamam! <b>MOTOSİKLET PARKI</b>\'ndan istediğin motora bin — bundan sonra kimseyle konuşmadan istediğin zaman kullanabilirsin.':'✅ Drift eğitimin tamam! <b>DRİFT ARABALARI</b>\'ndan birine bin.',6500); return; } return _od32(mode); };
+const _ead32=extraAfterDialog; extraAfterDialog=function(sc,n){ if(!D.closed){ if(sc==='motoInstr') S.ms.motoTrained=true; if(sc==='driftInstr') S.ms.driftTrained=true; save(); } _ead32(sc,n); };
+const _pick32=pickCar; pickCar=function(o){ if(o.mode==='moto'||o.mode==='drift'){ if(!S.ms.desk){ toast('🎫 Önce kayıt ofisinde (Ece) bir kez kayıt ol.',3000); return; } if(!S.ms[o.mode+'Trained']){ toast(o.mode==='moto'?'🎓 Önce bir kez <b>Kaan</b>\'dan motosiklet eğitimi al.':'🎓 Önce bir kez <b>Mert</b>\'ten drift eğitimi al.',3500); return; } PICK.mode=o.mode; PICK.col=o.col; PICK.car=o; PICK.active=true; _od32(o.mode); PICK.active=false; return; } return _pick32(o); };
+const _ea32=extraActions; extraActions=function(items){ _ea32(items); const P=player; const m=DRIVE2.mode;
+ if(m==='drone'&&!D.active){ if(!items.some(a=>a[1]==='E')) items.push(['🛸 Drone\'u bırak (uçuşu bitir)','droneQuit']); }
+ if(!m&&!P.car&&!D.active&&S.fly&&S.fly.droneCert&&!ROOM.active&&!(typeof REST!=='undefined'&&REST.active)&&!(typeof INT!=='undefined'&&INT.cur)) items.push(['🛸 Drone\'umu uçur (sertifikalı)','droneFree']);
+ if(P.zone===ZONES.moto&&!m&&!P.car){ const o=nearParked(); const ix=items.findIndex(a=>a[1]==='pickCar'); if(o&&(o.mode==='moto'||o.mode==='drift')){ if(ix>=0) items.splice(ix,1); items.unshift([(o.mode==='moto'?'🏍️ Bu motosiklete bin (':'💨 Bu drift arabasına bin (')+o.name+')','pickCar']); } } };
+const _eak32=extraActionKey; extraActionKey=function(k){ if(k==='droneQuit'){ endDrone(!!DRN.free); toast('🛸 Drone\'u bıraktın.',1500); return; } if(k==='droneFree'){ startDrone(true); return; } return _eak32(k); };
+// harita: motosiklet/drift parkları
+const _bp32=buildPOIs; buildPOIs=function(){ _bp32(); CM.pois.push({n:'🏎️ Go-kart park alanı (seç-bin)',x:194,z:-101.5,go:[194,-99.4],k:'big'},{n:'🏁 Formül pit alanı (seç-bin)',x:255,z:-84.4,go:[255,-82.4],k:'big'},{n:'🏍️ Motosiklet parkı (seç-bin)',x:280,z:-84.4,go:[280,-82.6],k:'big'},{n:'💨 Drift arabaları (seç-bin)',x:178,z:-209.5,go:[178,-207],k:'big'}); };
+CM.pois.length=0;
+
+// ================= v30: GO-KART KAYIT OFİSİ (Ece) görünür · OTEL: cam kapılı giriş, asansör kabini, balkon, 4 farklı otel =================
+// ---------- 0) Gömülü kalmış ofisleri dışarı al (Ece: Motor Sporları binası, Kaan: Pit binası içinde kalmıştı)
+function relocateOffice(k,nx,nz,yaw){ const O=OFFK[k]; if(!O) return; const def=OFF_DEF.find(d=>d.k===k); const ox=O.x, oz=O.z;
+ for(let i=colliders.length-1;i>=0;i--){ const c=colliders[i]; if(c.x1>=ox-3.4&&c.x2<=ox+3.4&&c.z1>=oz-1.6&&c.z2<=oz+1.6) colliders.splice(i,1); }
+ scene.remove(O.g); const ix=OFFICES.indexOf(O); if(ix>=0) OFFICES.splice(ix,1);
+ const n=O.npc; if(n){ n.office=null; }
+ OFFK[k]=officeBox(Object.assign({},def,{x:nx,z:nz,yaw,npc:n})); }
+relocateOffice('ece',200,-71.2,0); relocateOffice('kaan',284,-71.2,0);
+(function(){ // giriş yolu oku: Ece ofisinden piste
+ const ar=new THREE.Mesh(geoPlane,new THREE.MeshBasicMaterial({map:texSign('➜ GO-KART PİSTİ / PIT →','Önce Ece\'de kayıt · Register with Ece first','#c62828','#fff'),side:THREE.DoubleSide})); ar.scale.set(5,1.25,1); ar.position.set(216,2.2,-70.2); scene.add(ar);
+ box(0.12,1.6,0.12,M(0x444444),214,0.8,-70.25,null,false); box(0.12,1.6,0.12,M(0x444444),218,0.8,-70.25,null,false); })();
+
+// ---------- 1) OTEL TANIMLARI
+const HOTELS=[
+ {id:'sky',name:'Sky Tower Otel',en:'Sky Tower Hotel',short:'Sky Tower',enShort:'Sky Tower',rest:'Sky Restaurant',x:201,z:-42,floorY:78,floorN:24,restY:100,restN:30,roomNo:'2405',price:450,recF:'Derya',recM:'Derya',ord:'24th',viewTr:'şehir ve deniz',viewEn:'a view of the city and the sea',em:'🏙️'},
+ {id:'marina',name:'Marina Otel',en:'Marina Hotel',short:'Marina',enShort:'Marina',rest:'Marina Teras',x:290,z:-40,floorY:30,floorN:10,restY:42,restN:14,h:48,roomNo:'1012',price:380,recF:'Melis',recM:'Ozan',ord:'10th',viewTr:'deniz',viewEn:'a sea view',em:'🌊',col:'#5b8fa8',glass:'#0d3b4f',lobby:[0x1e88e5,0xe3f2fd,0x90caf9]},
+ {id:'sultan',name:'Sultan Konak Otel',en:'Sultan Mansion Hotel',short:'Sultan Konak',enShort:'Sultan Mansion',rest:'Sultan Teras',x:600,z:-64,floorY:12,floorN:4,restY:20,restN:6,h:25,roomNo:'405',price:520,recF:'Leyla',recM:'Kerem',ord:'4th',viewTr:'Sultanahmet Camii',viewEn:'a view of the Blue Mosque',em:'🕌',col:'#d9c7a3',glass:'#4e342e',lobby:[0x8d1c1c,0xfff3e0,0xd4af37],restLook:'north'},
+ {id:'cave',name:'Peri Bacası Mağara Otel',en:'Fairy Chimney Cave Hotel',short:'Mağara Otel',enShort:'Cave Hotel',rest:'Balon Teras',x:-300,z:-232,floorY:6,floorN:2,restY:13,restN:3,h:18,roomNo:'204',price:600,recF:'Gül',recM:'Mustafa',ord:'2nd',viewTr:'peri bacaları ve balonlar',viewEn:'a view of the fairy chimneys and the balloons',em:'🎈',stone:true,lobby:[0x8d6e63,0xf3e0c7,0xbf360c]}];
+const HK={}; HOTELS.forEach(h=>HK[h.id]=h); const SKY=HK.sky; SKY.tower=HOTEL.tower; let CURH=SKY;
+const recName=h=>RECEP.look&&RECEP.look.female===false?h.recM:h.recF;
+function keyHere(){ return !!S.hotelKey&&(S.hotelAt||'sky')===CURH.id; }
+function withKeyMask(fn){ return function(){ const k=S.hotelKey; const mask=k&&!keyHere(); if(mask) S.hotelKey=0; try{ return fn.apply(this,arguments); } finally{ if(mask) S.hotelKey=k; } }; }
+
+// ---------- 2) Ortak dış cephe: zemin katı camekân + kayar cam kapı + kırmızı halı
+const DOORS=[];
+function splitFront(face,h){ if(!face) return; face.scale.y=h-5; face.position.y=5+(h-5)/2; if(face.material.map){ face.material.map.repeat.y=Math.max(1,Math.round((h-5)/16)); } }
+function storefront(H,st){ const x1=H.x-11, x2=H.x+11, z1=H.z-8; const fr=M(st&&st.stone?0x5d4037:0x263238,{metalness:st&&st.stone?0:.6,roughness:.4});
+ const gl=new THREE.MeshStandardMaterial({color:0xa8d8ff,transparent:true,opacity:.22,roughness:.05,metalness:.3,side:THREE.DoubleSide,depthWrite:false});
+ // kemer/üst bant, dikmeler, camlar
+ box(22.2,0.5,0.35,fr,H.x,4.85,z1-0.05,null,false);
+ for(const [a,b] of [[x1,H.x-2.2],[H.x+2.2,x2]]){ const w=b-a; const g=new THREE.Mesh(geoPlane,gl); g.scale.set(w,4.6,1); g.position.set((a+b)/2,2.3,z1-0.03); scene.add(g); for(let x=a;x<=b+0.01;x+=w/3) box(0.12,4.6,0.16,fr,x,2.3,z1-0.05,null,false); }
+ box(0.22,4.6,0.22,fr,H.x-2.25,2.3,z1-0.05,null,false); box(0.22,4.6,0.22,fr,H.x+2.25,2.3,z1-0.05,null,false); box(4.6,0.3,0.25,fr,H.x,3.35,z1-0.05,null,false);
+ // kayar kapılar
+ const dg=new THREE.MeshStandardMaterial({color:0x9fd3ff,transparent:true,opacity:.35,roughness:.05,metalness:.4,side:THREE.DoubleSide,depthWrite:false});
+ const L=[],R2=[]; for(const s of [-1,1]){ const p=new THREE.Group(); p.position.set(H.x+s*1.1,0,z1-0.08); scene.add(p); const g=new THREE.Mesh(geoPlane,dg); g.scale.set(2.15,3.2,1); g.position.y=1.6; p.add(g); const fb=new THREE.Mesh(geoBox,fr); fb.scale.set(2.15,0.08,0.06); fb.position.y=0.04; p.add(fb); const ft=fb.clone(); ft.position.y=3.17; p.add(ft); const hd=new THREE.Mesh(geoBox,M(0xcfd8dc,{metalness:.9})); hd.scale.set(0.05,0.6,0.05); hd.position.set(-s*0.95,1.15,-0.06); p.add(hd); (s<0?L:R2).push(p); }
+ const sg=new THREE.Mesh(geoPlane,new THREE.MeshBasicMaterial({map:texSign('GİRİŞ ▼','ENTRANCE · LOBBY','#1b5e20','#fff'),side:THREE.DoubleSide})); sg.scale.set(2.6,0.65,1); sg.position.set(H.x,3.85,z1-0.25); sg.rotation.y=Math.PI; scene.add(sg);
+ const cp=new THREE.Mesh(geoPlane,M(0xb71c1c,{roughness:.95})); cp.scale.set(2.4,6,1); cp.rotation.x=-Math.PI/2; cp.position.set(H.x,0.04,z1-3); scene.add(cp);
+ const mat=new THREE.Mesh(geoPlane,M(0x3e2723)); mat.scale.set(2.4,1.2,1); mat.rotation.x=-Math.PI/2; mat.position.set(H.x,0.035,z1+0.9); scene.add(mat);
+ for(const s of [-1,1]){ const pot=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.28,0.6,10),M(0x795548)); pot.position.set(H.x+s*3.1,0.3,z1-0.8); scene.add(pot); const pl=new THREE.Mesh(new THREE.SphereGeometry(0.55,8,6),M(0x2e7d32)); pl.position.set(H.x+s*3.1,1.05,z1-0.8); scene.add(pl); addCol(H.x+s*3.1-0.35,z1-1.15,H.x+s*3.1+0.35,z1-0.45); }
+ DOORS.push({H,L,R:R2,t:0,z1}); }
+function updateDoors(dt){ const P=player; for(const d of DOORS){ const near=!P.car&&Math.abs(P.x-d.H.x)<4&&Math.abs(P.z-d.z1)<4.5&&(P.y||0)<1; d.t=clamp(d.t+(near?dt*2.2:-dt*1.6),0,1); const e=d.t*d.t*(3-2*d.t);
+ d.L.forEach(p=>p.position.x=d.H.x-1.1-e*2.0); d.R.forEach(p=>p.position.x=d.H.x+1.1+e*2.0); } }
+// Sky Tower ön cephesi: alt 5 m camekân olsun
+splitFront(HOTEL.tower.mesh.children[1],HOTEL.h); storefront(SKY,null); SKY.faceS=HOTEL.tower.mesh.children[0];
+
+// ---------- 3) Yeni otel binaları + lobiler
+function stoneTex(){ return ctex(256,256,(g,w,h)=>{ g.fillStyle='#d8b07a'; g.fillRect(0,0,w,h); for(let i=0;i<900;i++){ g.fillStyle=`rgba(${120+Math.random()*60|0},${80+Math.random()*40|0},40,.12)`; g.fillRect(Math.random()*w,Math.random()*h,3+Math.random()*8,2+Math.random()*5); }
+ for(let y=0;y<2;y++) for(let x=0;x<3;x++){ const cx=40+x*88, cy=60+y*128; g.fillStyle=Math.random()<.5?'#ffcf80':'#3e2a1c'; g.beginPath(); g.moveTo(cx-18,cy+40); g.lineTo(cx-18,cy); g.arc(cx,cy,18,Math.PI,0); g.lineTo(cx+18,cy+40); g.closePath(); g.fill(); g.strokeStyle='#5d4037'; g.lineWidth=4; g.stroke(); } }); }
+function hollowStone(H){ const w=22,d=16,h=H.h; const t=stoneTex(); t.wrapS=t.wrapT=THREE.RepeatWrapping; const g=new THREE.Group(); scene.add(g); const faces=[[H.x,H.z+d/2,w,0],[H.x,H.z-d/2,w,Math.PI],[H.x+w/2,H.z,d,Math.PI/2],[H.x-w/2,H.z,d,-Math.PI/2]]; const out=[];
+ for(const [fx,fz,fw,ry] of faces){ const tt=t.clone(); tt.needsUpdate=true; tt.repeat.set(Math.round(fw/7),Math.round(h/6)); const p=new THREE.Mesh(geoPlane,new THREE.MeshStandardMaterial({map:tt,roughness:1})); p.scale.set(fw,h,1); p.position.set(fx,h/2,fz); p.rotation.y=ry; g.add(p); out.push(p); }
+ box(w+0.8,0.8,d+0.8,M(0xc99a63,{roughness:1}),H.x,h+0.4,H.z,null,false);
+ for(const [ox,oz,hh] of [[-8,-5,6],[8,4,8],[0,-6,5]]){ const c=new THREE.Mesh(new THREE.ConeGeometry(2.2,hh,9),M(0xd8b07a,{roughness:1})); c.position.set(H.x+ox,h+0.8+hh/2,H.z+oz); scene.add(c); const cap=new THREE.Mesh(new THREE.ConeGeometry(1.1,1.4,9),M(0x5d4637)); cap.position.set(H.x+ox,h+0.8+hh+0.5,H.z+oz); scene.add(cap); }
+ return {mesh:g,faces:out}; }
+function clearArea(x1,z1,x2,z2){ // peri bacalarını otel alanından kaldır
+ for(let i=scene.children.length-1;i>=0;i--){ const o=scene.children[i]; if(!o.isGroup||!o.children[0]||!o.children[0].material) continue; const m=o.children[0].material; if(m!==tuffM&&m!==tuffM2) continue; if(o.position.x>x1&&o.position.x<x2&&o.position.z>z1&&o.position.z<z2) scene.remove(o); }
+ for(let i=CHIM.length-1;i>=0;i--){ const c=CHIM[i]; if(c.x>x1&&c.x<x2&&c.z>z1&&c.z<z2) CHIM.splice(i,1); }
+ for(let i=colliders.length-1;i>=0;i--){ const c=colliders[i]; const cx=(c.x1+c.x2)/2, cz=(c.z1+c.z2)/2; if(cx>x1&&cx<x2&&cz>z1&&cz<z2&&c.x2-c.x1<30) colliders.splice(i,1); } }
+function buildLobby(H){ const w=22,d=16, x1=H.x-w/2, x2=H.x+w/2, z1=H.z-d/2, z2=H.z+d/2; const [deskC,wallC,accC]=H.lobby;
+ addCol(x1,z2-0.3,x2,z2); addCol(x1,z1,x1+0.3,z2); addCol(x2-0.3,z1,x2,z2); addCol(x1,z1,H.x-2.2,z1+0.3); addCol(H.x+2.2,z1,x2,z1+0.3);
+ const inM=new THREE.MeshStandardMaterial({color:wallC,roughness:.8,side:THREE.DoubleSide}); interiorMats.push(inM);
+ plane(w-0.6,d-0.6,M(H.stone?0xc8a77a:0xd7ccc8,{roughness:.45}),H.x,0.03,H.z,-Math.PI/2); plane(w-0.6,d-0.6,inM,H.x,4.6,H.z,Math.PI/2);
+ box(w-0.6,4.6,0.15,inM,H.x,2.3,z2-0.4,null,false); box(0.15,4.6,d-0.6,inM,x1+0.4,2.3,H.z,null,false); box(0.15,4.6,d-0.6,inM,x2-0.4,2.3,H.z,null,false);
+ box(8,1.1,1,M(deskC),H.x,0.55,H.z+1.5); box(8.2,0.08,1.2,M(0xe0d6c8),H.x,1.14,H.z+1.5,null,false); addCol(H.x-4,H.z+1,H.x+4,H.z+2);
+ const lg=texSign('RESEPSİYON · '+H.name.toUpperCase(),'RECEPTION · CHECK-IN / CHECK-OUT','#3e2723','#fff'); const lp=new THREE.Mesh(geoPlane,new THREE.MeshBasicMaterial({map:lg})); lp.scale.set(6,1.3,1); lp.position.set(H.x,3.4,z2-0.5); lp.rotation.y=Math.PI; scene.add(lp);
+ for(const ex of [x1+3,x1+6]){ box(2,3,0.1,M(0xb0bec5,{metalness:.8,roughness:.2}),ex,1.5,z2-0.5,null,false); }
+ const ls=new THREE.Mesh(geoPlane,new THREE.MeshBasicMaterial({map:texSign('🛗 ASANSÖR','LIFT · 0 – '+H.restN,'#263238','#fff')})); ls.scale.set(3,0.75,1); ls.position.set(x1+4.5,3.4,z2-0.52); ls.rotation.y=Math.PI; scene.add(ls);
+ for(const sx of [x2-4,x2-7]) { box(2,0.6,0.9,M(accC),sx,0.3,H.z-3); addCol(sx-1,H.z-3.45,sx+1,H.z-2.55); }
+ const rug=new THREE.Mesh(geoPlane,M(accC,{roughness:1})); rug.scale.set(6,4,1); rug.rotation.x=-Math.PI/2; rug.position.set(H.x,0.05,H.z-3); scene.add(rug);
+ if(H.id==='sultan'){ for(const sx of [x1+1.2,x2-1.2]){ const lamp=new THREE.Mesh(new THREE.SphereGeometry(0.35,10,8),new THREE.MeshBasicMaterial({color:0xffb74d})); lamp.position.set(sx,3.6,H.z-4); scene.add(lamp); } }
+ const pl=new THREE.Mesh(new THREE.SphereGeometry(0.7,8,6),M(0x2e7d32)); pl.position.set(x1+1.4,1.2,z1+1.4); scene.add(pl);
+ const lobbyL=new THREE.PointLight(0xfff0d0,0.9,18); lobbyL.position.set(H.x,4,H.z); scene.add(lobbyL);
+ // dış tabela + kanopi + işaret
+ const sign=texSign(H.name.toUpperCase(),H.en.toUpperCase(),H.stone?'#6d4c41':H.id==='sultan'?'#8d1c1c':'#0277bd','#fff'); const sp=new THREE.Mesh(geoPlane,new THREE.MeshStandardMaterial({map:sign,emissive:0xffffff,emissiveMap:sign,emissiveIntensity:.35})); sp.scale.set(10,2,1); sp.position.set(H.x,6.2,z1-0.1); sp.rotation.y=Math.PI; scene.add(sp);
+ box(5,0.25,3,M(0xb0bec5,{metalness:.6}),H.x,4.1,z1-1.4,null,false); for(const s of [-1,1]) box(0.15,4.1,0.15,M(0xb0bec5,{metalness:.6}),H.x+s*2.3,2.05,z1-2.7,null,false);
+ const bc=new THREE.Sprite(new THREE.SpriteMaterial({map:texBeacon('🏨'),depthTest:false,transparent:true})); bc.scale.set(3.2,3.2,1); bc.position.set(H.x,9.5,z1-1); bc.renderOrder=5; scene.add(bc); H.beacon=bc;
+ mapRect(x1,z1,x2,z2,'#455a64'); }
+HOTELS.forEach(H=>{ if(H.id==='sky') return;
+ if(H.stone){ clearArea(H.x-20,H.z-16,H.x+20,H.z+34); const T=hollowStone(H); H.faceS=T.faces[0]; splitFront(T.faces[1],H.h); }
+ else { const T=skyscraper(H.x,H.z,22,16,H.h,H.col,H.glass,{hollow:true,name:H.name}); H.tower=T; H.faceS=T.mesh.children[0]; splitFront(T.mesh.children[1],H.h); }
+ buildLobby(H); storefront(H,H.stone?{stone:1}:null); });
+// Kapadokya otel kapısına yürüyüş yolu
+(function(){ const H=HK.cave; const pth=new THREE.Mesh(geoPlane,M(0xbfa27a,{roughness:1})); pth.scale.set(3,10,1); pth.rotation.x=-Math.PI/2; pth.position.set(H.x,0.03,H.z-13); scene.add(pth); })();
+
+// ---------- 4) Balkon (oda grubuna; Sky Tower koordinatlarında kurulur, sonra otele göre taşınır)
+const BALC={open:0,t:0,watch:0,prevFpv:null};
+(function(){ const H=HOTEL, Y=ROOM.y, g=ROOM.g, zS=H.z+8-0.4; const bx1=H.x-1, bx2=H.x+8, dx=H.x+4; BALC.base={zS,bx1,bx2,dx,dw:1.8};
+ box(bx2-bx1,0.2,2.5,M(0x9e9e9e,{roughness:.7}),(bx1+bx2)/2,Y-0.08,zS+1.25,g);
+ const rg=new THREE.MeshStandardMaterial({color:0xbfe3ff,transparent:true,opacity:.25,depthWrite:false,side:THREE.DoubleSide}); const rail=M(0xcfd8dc,{metalness:.8,roughness:.3});
+ for(const [w,x,z,ry] of [[bx2-bx1,(bx1+bx2)/2,zS+2.45,0],[2.45,bx1,zS+1.22,Math.PI/2],[2.45,bx2,zS+1.22,Math.PI/2]]){ const p=new THREE.Mesh(geoPlane,rg); p.scale.set(w,1.0,1); p.position.set(x,Y+0.55,z); p.rotation.y=ry; g.add(p); const t=new THREE.Mesh(geoBox,rail); t.scale.set(ry?0.06:w,0.06,ry?w:0.06); t.position.set(x,Y+1.08,z); g.add(t); }
+ // iki sandalye + küçük masa + saksı
+ const wood=M(0x8d6e63); for(const s of [-1,1]){ box(0.5,0.08,0.5,wood,bx2-2.2+s*0.9,Y+0.45,zS+1.4,g,false); box(0.5,0.5,0.06,wood,bx2-2.2+s*0.9,Y+0.72,zS+1.65,g,false); for(const a of [-0.2,0.2]) box(0.05,0.45,0.05,wood,bx2-2.2+s*0.9+a,Y+0.22,zS+1.4,g,false); }
+ const tb=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,0.04,14),M(0xfafafa)); tb.position.set(bx2-2.2,Y+0.62,zS+1.3); g.add(tb); const tl=new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.6,6),rail); tl.position.set(bx2-2.2,Y+0.31,zS+1.3); g.add(tl);
+ const pot=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.2,0.4,10),M(0xbf6f3a)); pot.position.set(bx1+0.5,Y+0.2,zS+2.0); g.add(pot); const fl=new THREE.Mesh(new THREE.SphereGeometry(0.35,8,6),M(0xe91e63)); fl.position.set(bx1+0.5,Y+0.65,zS+2.0); g.add(fl);
+ // sürgülü balkon kapısı (çerçeve + kayan cam)
+ const fr=M(0x37474f,{metalness:.6}); box(0.1,2.5,0.12,fr,dx-0.95,Y+1.25,zS-0.05,g,false); box(0.1,2.5,0.12,fr,dx+0.95,Y+1.25,zS-0.05,g,false); box(2,0.1,0.12,fr,dx,Y+2.5,zS-0.05,g,false);
+ const dp=new THREE.Group(); dp.position.set(dx,Y,zS-0.12); g.add(dp); const dgl=new THREE.Mesh(geoPlane,new THREE.MeshStandardMaterial({color:0x90caf9,transparent:true,opacity:.4,depthWrite:false,side:THREE.DoubleSide})); dgl.scale.set(1.8,2.4,1); dgl.position.y=1.22; dp.add(dgl);
+ const df=new THREE.Mesh(geoBox,fr); df.scale.set(1.8,0.07,0.05); df.position.y=0.04; dp.add(df); const df2=df.clone(); df2.position.y=2.42; dp.add(df2); const hd=new THREE.Mesh(geoBox,M(0xeeeeee,{metalness:.9})); hd.scale.set(0.05,0.35,0.06); hd.position.set(-0.8,1.1,-0.05); dp.add(hd); BALC.panel=dp;
+ const ds=new THREE.Mesh(geoPlane,new THREE.MeshBasicMaterial({map:texSign('🌇 BALKON','BALCONY','#37474f','#fff')})); ds.scale.set(1.2,0.3,1); ds.position.set(dx,Y+2.75,zS-0.13); ds.rotation.y=Math.PI; g.add(ds); })();
+
+// ---------- 5) Taban (Sky Tower) değerleri ve otel taşıma
+const cpR=c=>({x1:c.x1,z1:c.z1,x2:c.x2,z2:c.z2});
+const BASE={hx:HOTEL.x,hz:HOTEL.z,lift:{x:HOTEL.lift.x,z:HOTEL.lift.z},ry:ROOM.y,sy:REST.y,
+ roomCols:ROOM.cols.filter(c=>!(Math.abs(c.z2-(HOTEL.z+HOTEL.d/2-0.4))<0.05&&c.x2-c.x1>15)).map(cpR),bed:{...ROOM.bed},sink:{...ROOM.sink},door:{...ROOM.door},phone:ROOM.phone?{...ROOM.phone}:null,zone:{...ROOM.zone},
+ restCols:REST.cols.map(cpR),rlift:{...REST.lift},tables:REST.tables.map(t=>({...t})),rzone:{...REST.zone},
+ npcs:[RECEP,...REST_NPCS].map(n=>({n,x:n.x,z:n.z,hx:n.home.x,hz:n.home.z}))};
+const ofs={dx:0,dz:0};
+function roomColsNow(){ const {dx,dz}=ofs, b=BALC.base, x1=BASE.hx-11+0.4+dx, x2=BASE.hx+11-0.4+dx, zS=b.zS+dz, bx1=b.bx1+dx, bx2=b.bx2+dx, d1=b.dx+dx-b.dw/2, d2=b.dx+dx+b.dw/2;
+ const L=BASE.roomCols.map(c=>({x1:c.x1+dx,x2:c.x2+dx,z1:c.z1+dz,z2:c.z2+dz}));
+ if(BALC.open){ L.push({x1,z1:zS-0.25,x2:d1,z2:zS},{x1:d2,z1:zS-0.25,x2,z2:zS},{x1:bx1-0.25,z1:zS,x2:bx1+0.05,z2:zS+2.6},{x1:bx2-0.05,z1:zS,x2:bx2+0.25,z2:zS+2.6},{x1:bx1,z1:zS+2.3,x2:bx2,z2:zS+2.6},{x1:bx2-2.2-0.45,z1:zS+0.95,x2:bx2-2.2+0.45,z2:zS+1.7}); }
+ else L.push({x1,z1:zS-0.25,x2,z2:zS});
+ ROOM.cols=L; ROOM.zone.z2=BASE.zone.z2+dz+(BALC.open?2.15:0); }
+function applyHotel(H){ if(H===CURH) return; const dx=H.x-BASE.hx, dz=H.z-BASE.hz, ry=H.floorY-BASE.ry, sy=H.restY-BASE.sy; ofs.dx=dx; ofs.dz=dz;
+ HOTEL.x=H.x; HOTEL.z=H.z; HOTEL.floorY=H.floorY; HOTEL.lift={x:BASE.lift.x+dx,z:BASE.lift.z+dz};
+ ROOM.y=H.floorY; ROOM.cx=H.x; ROOM.cz=H.z; for(const k of ['bed','sink','door','phone']){ if(BASE[k]&&ROOM[k]){ ROOM[k].x=BASE[k].x+dx; ROOM[k].z=BASE[k].z+dz; } }
+ ROOM.zone={x1:BASE.zone.x1+dx,x2:BASE.zone.x2+dx,z1:BASE.zone.z1+dz,z2:BASE.zone.z2+dz,name:H.short+' '+H.roomNo,room:true}; BALC.open=0; BALC.t=0; BALC.panel.position.x=BALC.base.dx; roomColsNow();
+ ROOM.g.position.set(dx,ry,dz); REST.g.position.set(dx,sy,dz); REST.y=H.restY;
+ REST.cols=BASE.restCols.map(c=>({x1:c.x1+dx,x2:c.x2+dx,z1:c.z1+dz,z2:c.z2+dz})); REST.lift={x:BASE.rlift.x+dx,z:BASE.rlift.z+dz}; BASE.tables.forEach((t,i)=>{ REST.tables[i].x=t.x+dx; REST.tables[i].z=t.z+dz; }); REST.zone={...BASE.rzone,x1:BASE.rzone.x1+dx,x2:BASE.rzone.x2+dx,z1:BASE.rzone.z1+dz,z2:BASE.rzone.z2+dz,name:H.rest};
+ BASE.npcs.forEach(o=>{ const n=o.n; n.x=o.x+dx; n.z=o.z+dz; n.home.x=o.hx+dx; n.home.z=o.hz+dz; if(n.office) n.office=null; });
+ RECEP.y=0; if(RECEP.bc) RECEP.bc.position.set(RECEP.x,3.3,RECEP.z);
+ const nm=recName(H); RECEP.role=R('Resepsiyonist '+nm,'Receptionist '+nm,'🛎️'); try{ if(RECEP.label){ scene.remove(RECEP.label); RECEP.label=makeLabel(RECEP.role.tr); scene.add(RECEP.label); } }catch(e){}
+ WAITER.role=R(H.rest+' garsonu','Restaurant waiter','🍳'); if(RSIGN){ if(!H._rsTex) H._rsTex=texSign(H.rest.toUpperCase()+' · KAHVALTI','BREAKFAST 07:00–10:30','#3e2723','#ffd54f'); RSIGN.material.map=H._rsTex; RSIGN.material.emissiveMap=H._rsTex; RSIGN.material.needsUpdate=true; } CURH=H; hotelTold=false; }
+const RSIGN=REST.g.children.find(m=>m.isMesh&&m.geometry===geoPlane&&Math.abs(m.scale.x-5)<0.01&&Math.abs(m.scale.y-1.25)<0.01); if(RSIGN) SKY._rsTex=RSIGN.material.map;
+roomColsNow();
+let _hotT=0; function hotelPick(dt){ _hotT-=dt; if(_hotT>0) return; _hotT=0.5; const P=player; if(ROOM.active||REST.active||D.active||LIFT.on) return; let best=null,bd=40; for(const H of HOTELS){ const d=Math.hypot(P.x-H.x,P.z-H.z); if(d<bd){ bd=d; best=H; } } if(best&&best!==CURH) applyHotel(best);
+ HOTELS.forEach(H=>{ if(H.beacon) H.beacon.position.y=9.5+Math.sin(T*2+H.x)*0.25; }); }
+
+// ---------- 6) Metinler: otele göre isimler
+function hotelRep(s){ if(typeof s!=='string'||CURH===SKY) return s; const H=CURH; return s.replace(/Sky Tower Otel/g,H.name).replace(/Sky Tower Hotel/g,H.en).replace(/Sky Restaurant/g,H.rest).replace(/the Sky Tower/g,'the '+H.enShort).replace(/Sky Tower/g,H.short).replace(/2405/g,H.roomNo).replace(/24th floor/g,H.ord+' floor').replace(/24\. kat/g,H.floorN+'. kat').replace(/Derya/g,recName(H)).replace(/\b450\b/g,String(H.price)).replace(/with a city view/g,'with '+H.viewEn).replace(/a view of the whole city/g,H.viewEn).replace(/overlooking the entire city/g,'with '+H.viewEn).replace(/şehir manzaralı/g,H.viewTr+' manzaralı').replace(/bütün şehri gören/g,H.viewTr+' manzaralı').replace(/bütün şehre bakan/g,H.viewTr+' manzaralı').replace(/en üst katta|En üst kat/g,m=>m[0]==='E'?H.restN+'. kat':H.restN+'. katta'); }
+function deepRep(o){ if(typeof o==='string') return hotelRep(o); if(Array.isArray(o)) return o.map(deepRep); if(o&&typeof o==='object'){ const r={}; for(const k in o) r[k]=deepRep(o[k]); return r; } return o; }
+const HSC=['hotelCheckIn','hotelBack','hotelCheckOut','breakfast','rsFood','rsClean','rsWake'].filter(k=>SC[k]);
+HOTELS.forEach(H=>{ if(H===SKY) return; const keep=CURH; CURH=H; HSC.forEach(k=>{ const c=deepRep(SC[k]); if(k==='hotelCheckIn') c.init=v=>{ v.total=H.price; }; SC[k+'@'+H.id]=c; }); CURH=keep; });
+const mapSc=sc=>(typeof sc==='string'&&CURH!==SKY&&SC[sc+'@'+CURH.id])?sc+'@'+CURH.id:sc;
+const _sd33=startDialog; startDialog=function(n,who,sc){ return _sd33(n,who,mapSc(sc)); };
+const _cs33=chooseScenario; chooseScenario=withKeyMask(function(n){ return mapSc(_cs33(n)); });
+const _toast33=toast; toast=function(m,ms){ return _toast33(hotelRep(m),ms); };
+
+// ---------- 7) Asansör kabini (kat göstergesi)
+const LIFT={on:false};
+(function(){ const st=document.createElement('style'); st.textContent=`#liftOv{position:fixed;inset:0;z-index:70;display:none;background:radial-gradient(circle at 50% 40%,#5d6d78,#1c252b 75%);align-items:center;justify-content:center;flex-direction:column;font-family:inherit;color:#fff}
+#liftOv .cab{position:relative;width:min(78vw,420px);height:min(60vh,420px);border:6px solid #90a4ae;border-radius:10px;background:linear-gradient(90deg,#b0bec5,#eceff1 50%,#b0bec5);overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,.6)}
+#liftOv .dl,#liftOv .dr{position:absolute;top:0;bottom:0;width:50%;background:linear-gradient(90deg,#90a4ae,#cfd8dc,#90a4ae);transition:transform 0.7s ease;border:1px solid #78909c}
+#liftOv .dl{left:0} #liftOv .dr{right:0} #liftOv.open .dl{transform:translateX(-100%)} #liftOv.open .dr{transform:translateX(100%)}
+#liftOv .disp{font:700 54px/1 monospace;color:#ff5252;background:#111;padding:10px 26px;border-radius:10px;margin-bottom:16px;min-width:150px;text-align:center;text-shadow:0 0 12px #ff1744}
+#liftOv .txt{margin-top:14px;font-size:17px;text-align:center;padding:0 12px} #liftOv .pan{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:grid;gap:5px}
+#liftOv .pan b{width:26px;height:26px;border-radius:50%;background:#37474f;border:2px solid #cfd8dc;display:flex;align-items:center;justify-content:center;font-size:11px} #liftOv .pan b.on{background:#ffca28;color:#000}`; document.head.appendChild(st);
+ const d=document.createElement('div'); d.id='liftOv'; d.innerHTML='<div class="disp" id="liftNum">0</div><div class="cab"><div class="dl"></div><div class="dr"></div></div><div class="txt" id="liftTxt"></div>'; document.body.appendChild(d); })();
+function liftRide(from,to,label,cb){ if(LIFT.on){ cb(); return; } LIFT.on=true; const ov=$('liftOv'); ov.classList.remove('open'); ov.style.display='flex'; const up=to>from; $('liftTxt').innerHTML=`🛗 ${hotelRep(label)} <i>(${up?'Going up':'Going down'}…)</i>`; $('liftNum').textContent=(up?'▲ ':'▼ ')+from;
+ try{ sayEn(up?'Going up.':'Going down.'); }catch(e){}
+ const n=Math.abs(to-from), dur=Math.min(3200,1200+n*70), t0=performance.now();
+ const tick=()=>{ const k=Math.min(1,(performance.now()-t0)/dur); const f=Math.round(from+(to-from)*k); $('liftNum').textContent=(k<1?(up?'▲ ':'▼ '):'● ')+(f===0?'L':f); if(k<1) requestAnimationFrame(tick); else { try{ if(typeof beep==='function') beep(880,0.15); }catch(e){} $('liftTxt').innerHTML=`🔔 <b>Ding!</b> ${to===0?'Lobi':to+'. kat'} — <i>${to===0?'Lobby':'Floor '+to}</i>`; setTimeout(()=>{ cb(); ov.classList.add('open'); setTimeout(()=>{ ov.style.display='none'; LIFT.on=false; },1100); },500); } };
+ setTimeout(tick,350); }
+const _goRoom33=goRoom; goRoom=withKeyMask(function(){ if(!S.hotelKey||LIFT.on) return _goRoom33(); const from=REST.active?CURH.restN:0; liftRide(from,CURH.floorN,'Odana çıkıyorsun: '+CURH.floorN+'. kat, oda '+CURH.roomNo,()=>_goRoom33()); });
+const _leaveRoom33=leaveRoom; leaveRoom=function(){ stopBalWatch(); liftRide(CURH.floorN,0,'Lobiye iniyorsun',()=>_leaveRoom33()); };
+const _goRest33=goRest; goRest=withKeyMask(function(){ if(!S.hotelKey||LIFT.on) return _goRest33(); stopBalWatch(); liftRide(ROOM.active?CURH.floorN:0,CURH.restN,CURH.rest+' — kahvaltı katı',()=>_goRest33()); });
+const _leaveRest33=leaveRest; leaveRest=function(to){ liftRide(CURH.restN,to==='room'?CURH.floorN:0,to==='room'?'Odana iniyorsun':'Lobiye iniyorsun',()=>_leaveRest33(to)); };
+// odaya girince balkon tarafındaki dış cephe gizlensin (balkondan içeri bakınca)
+function faceVis(){ const inside=ROOM.active||REST.active; HOTELS.forEach(H=>{ if(H.faceS) H.faceS.visible=!(inside&&H===CURH); }); }
+
+// ---------- 8) Balkon eylemleri
+function onBalcony(){ return ROOM.active&&player.z>BALC.base.zS+ofs.dz+0.05; }
+function stopBalWatch(){ if(!BALC.watch) return; BALC.watch=0; S.fpv=BALC.prevFpv; camS._p26=0.3; }
+function balToggle(open){ BALC.open=open?1:0; roomColsNow(); toast(open?'🚪 Balkon kapısını açtın — temiz hava! <i>Fresh air!</i>':'🚪 Balkon kapısını kapattın.',2200); if(open) sayEn('Let me open the balcony door.'); }
+function updateBalcony(dt){ if(!ROOM.active){ if(BALC.watch) stopBalWatch(); return; } BALC.t=clamp(BALC.t+(BALC.open?dt*1.8:-dt*1.8),0,1); BALC.panel.position.x=BALC.base.dx+BALC.t*1.75; }
+const _ea33=extraActions; extraActions=withKeyMask(function(items){ _ea33(items); const P=player;
+ if(ROOM.active&&!ROOM.sleeping&&!D.active){ const b=BALC.base, dX=b.dx+ofs.dx, zS=b.zS+ofs.dz;
+  if(onBalcony()){ for(let i=items.length-1;i>=0;i--){ if(['bed','wash','toDoor','down'].includes(items[i][1])) items.splice(i,1); }
+   items.unshift([BALC.watch?'↩️ İzlemeyi bırak':'🌇 Balkondan '+CURH.viewTr+' manzarasını izle','balWatch'],['🚪 İçeri gir','balIn']); }
+  else { const near=Math.hypot(P.x-dX,P.z-(zS-0.6))<2.4; if(near) items.unshift([BALC.open?'🚪 Balkon kapısını kapat':'🚪 Balkon kapısını aç','balDoor']); if(BALC.open) items.unshift(['🌇 Balkona çık','balGo']); else if(!near) items.push(['🚪 Balkon kapısına git','balTo']); } }
+ for(const it of items) it[0]=hotelRep(it[0]); });
+const _eak33=extraActionKey; extraActionKey=withKeyMask(function(k){ const P=player, b=BALC.base, dX=b.dx+ofs.dx, zS=b.zS+ofs.dz;
+ if(k==='balDoor') return balToggle(!BALC.open); if(k==='balTo'){ P.target=[dX,zS-0.8,false]; return; }
+ if(k==='balGo'){ ROOM.view=0; P.target=[dX+0.2,zS+1.2,false]; setTimeout(()=>{ if(onBalcony()){ camS.yaw=Math.PI; toast('🌇 Balkondasın! '+CURH.viewTr+' manzarası ayaklarının altında. <i>What a view!</i>',3500); sayEn('Wow! What a view from up here!'); } },1800); return; }
+ if(k==='balIn'){ stopBalWatch(); P.target=[dX,zS-1.4,false]; return; }
+ if(k==='balWatch'){ if(BALC.watch){ stopBalWatch(); return; } BALC.watch=1; BALC.prevFpv=S.fpv; S.fpv=true; camS.yaw=Math.PI; camS._p26=0.85; toast('👀 Aşağıdaki şehre bak! Sürükleyerek / ok tuşlarıyla etrafına bakın. <i>I can see everything from here!</i>',4500); sayEn('I can see the whole city from here!'); return; }
+ return _eak33(k); });
+const _leaveRoomBal=leaveRoom; leaveRoom=function(){ BALC.open=0; roomColsNow(); _leaveRoomBal(); };
+const _sleepBal=sleepBed; sleepBed=function(){ stopBalWatch(); return _sleepBal(); };
+
+// ---------- 9) Anahtar: hangi otelde?
+const _exA33=extraAct; extraAct=function(a,n,v,P){ if(a==='hotelKey'){ const old=S.hotelKey&&S.hotelAt&&S.hotelAt!==CURH.id?HK[S.hotelAt]:null; const r=_exA33(a,n,v,P); S.hotelAt=CURH.id; save(); if(old) setTimeout(()=>toast('ℹ️ '+old.name+' anahtarın iptal edildi; artık '+CURH.name+' misafirisin.',3500),4800); return r; }
+ if(a==='checkOut'){ const r=_exA33(a,n,v,P); S.hotelAt=null; S.hotelStays=S.hotelStays||{}; S.hotelStays[CURH.id]=1; save(); setTimeout(()=>{ const left=HOTELS.filter(h=>!S.hotelStays[h.id]).map(h=>h.em+' '+h.name); if(left.length) toast('🏨 Başka otellerde de kalabilirsin: '+left.join(' · ')+' <i>(Menü → 🏨 Oteller)</i>',5500); },6500); return r; }
+ return _exA33(a,n,v,P); };
+
+// ---------- 10) Kamera: lobide tavana/dışarıya kaçmasın; manzara bakışları otele göre
+const _uc33=updateCamera; updateCamera=function(dt){ _uc33(dt); const P=player, H=CURH; faceVis();
+ if(!ROOM.active&&!REST.active&&!P.car&&!D.camOv&&(P.y||0)<1&&!(typeof fpvActive==='function'&&fpvActive())){ for(const L of HOTELS){ const x1=L.x-11, x2=L.x+11, z1=L.z-8, z2=L.z+8; if(P.x>x1+0.3&&P.x<x2-0.3&&P.z>z1+0.25&&P.z<z2-0.3){
+   const hx=P.x, hy=1.5, hz=P.z; const c=camera.position, SH=WARP.on?WARP.shift:0; const cz=c.z-SH; const vx=c.x-hx, vy=c.y-hy, vz=cz-hz; let t=1;
+   const lim=(v,o,lo,hi)=>{ if(v>1e-6&&o+v>hi) t=Math.min(t,(hi-o)/v); if(v<-1e-6&&o+v<lo) t=Math.min(t,(lo-o)/v); };
+   lim(vx,hx,x1+0.7,x2-0.7); lim(vz,hz,z1+0.5,z2-0.7); lim(vy,hy,0.4,4.1); if(t<1){ t=Math.max(0.12,t); const wx=hx+vx*t, wy=hy+vy*t, wzz=hz+vz*t; c.set(wx,wy,wzz+SH); const tg=D.active&&D.npc?new THREE.Vector3(D.npc.x,1.35,wz(D.npc.z)):new THREE.Vector3(P.x,1.35,wz(P.z)); camera.lookAt(tg); camera.updateMatrixWorld(); camS.pos.set(wx,wy,wzz); } break; } } }
+ if(REST.active&&REST.view&&H.restLook==='north'){ camera.position.set(H.x+1.6,REST.y+1.7,wz(H.z-8+1.2)); camera.lookAt(H.x-4,REST.y-14,wz(H.z-70)); camera.updateMatrixWorld(); }
+ if(ROOM.active&&ROOM.view&&H.id==='cave'){ camera.position.set(H.x+1.2,ROOM.y+1.7,wz(H.z+8-1.2)); camera.lookAt(H.x+1.2,ROOM.y+18,wz(H.z+80)); camera.updateMatrixWorld(); }
+ if(REST.active&&REST.view&&H.id==='cave'){ camera.position.set(H.x+1.6,REST.y+1.7,wz(H.z+8-1.0)); camera.lookAt(H.x+12,REST.y+25,wz(H.z+90)); camera.updateMatrixWorld(); } };
+// HOTEL.d sabit (16) — yeni oteller aynı ölçüde
+
+// ---------- 11) Tick
+const _up6_33=updateP6; updateP6=function(dt){ _up6_33(dt); try{ hotelPick(dt); updateDoors(dt); updateBalcony(dt); }catch(e){ if(!updateP6._e){ updateP6._e=1; console.warn(e); } } };
+
+// ---------- 12) Harita, menü
+const _bp33=buildPOIs; buildPOIs=function(){ _bp33(); CM.pois.forEach(p=>{ if(/Sky Tower/.test(p.n)){ p.x=SKY.x; p.z=SKY.z-(p.k==='big'?8:0); p.go=[SKY.x,SKY.z-9.5]; } });
+ HOTELS.forEach(H=>{ if(H===SKY) return; CM.pois.push({n:'🏨 '+H.name+' — '+H.viewTr+' manzaralı, '+H.floorN+'. kat oda, '+H.restN+'. katta kahvaltı',x:H.x,z:H.z,go:[H.x,H.z-9.5],k:'lm'}); }); };
+CM.pois.length=0;
+function openHotels(){ const rows=HOTELS.map(H=>`<button class="card" data-h="${H.id}"><b>${H.em} ${H.name}</b>${H.viewTr} manzarası · oda ${H.roomNo} (${H.floorN}. kat) · kahvaltı ${H.restN}. kat · ${H.price} ₺/gece${S.hotelKey&&(S.hotelAt||'sky')===H.id?' · 🔑 <b>odan burada</b>':''}${S.hotelStays&&S.hotelStays[H.id]?' · ✅ kaldın':''}</button>`).join('');
+ openMenu(head('🏨 Oteller')+'<p>Her otelin girişinden yürüyerek gir → resepsiyonistle konuş, oda tut → 🛗 asansörle odana çık → 🚪 balkon kapısını aç, manzarayı izle → yat, sabah ol → üst kattaki restoranda kahvaltı → lobide anahtarı teslim et.</p><div class="grid">'+rows+'</div>');
+ $('menuBox').querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>{ const H=HK[b.dataset.h]; closeMenu(); teleportTo(H.x,H.z-11,'🏨 '+H.name); }); }
+const _oh33=openHub; openHub=function(){ _oh33(); const b=$('hHT'); if(b){ b.innerHTML='<b>🏨 Oteller (4)</b>Sky Tower · Marina · Sultan Konak · Mağara'; b.onclick=openHotels; } };
+// p31 lobi bilgisi: yeni otellerde de
+const _up33=updatePlayer; updatePlayer=function(dt){ _up33(dt); if(ROOM.active&&onBalcony()){ player.y=ROOM.y; } };
+const _ead33=extraAfterDialog; extraAfterDialog=function(sc,n){ return _ead33(typeof sc==='string'?sc.split('@')[0]:sc,n); };
+const _exE33=exitEverything; exitEverything=function(){ const was=LIFT.on; LIFT.on=true; try{ stopBalWatch(); return _exE33(); } finally{ LIFT.on=was; } };
+// ofis eğitmenleriyle uzaktan da (5 m) konuşabil
+const _eaOff=extraActions; extraActions=function(items){ _eaOff(items); const P=player; if(D.active||P.car||ROOM.active||REST.active||DRIVE2.mode) return; const O=OFFICES.find(O=>O.npc&&O.npc.talk!==false&&!O.npc.hidden&&Math.hypot(O.npc.x-P.x,O.npc.z-P.z)<5.5); if(O&&!items.some(i=>i[1]==='offTalk')) items.unshift(['💬 '+O.npc.role.tr.replace(/^.*?(görevlisi|eğitmeni|pilotu|Kaptan)\s*/,'')+' ile konuş','offTalk']); };
+const _eakOff=extraActionKey; extraActionKey=function(k){ if(k==='offTalk'){ const P=player; const O=OFFICES.find(O=>O.npc&&Math.hypot(O.npc.x-P.x,O.npc.z-P.z)<5.5); if(O) startDialog(O.npc,'npc'); return; } return _eakOff(k); };
+
+// ================= v31: UÇAK — gazla yüksel / gaz kes alçal · binalara çarpma → düşüş + paraşüt · arkadan kamera (uzaklık ayarlı) · araçlar binalardan geçmez =================
+// ---------- 1) Bina yükseklik haritası (uçak / drone çarpışması için)
+let BLD=null;
+function buildBLD(){ BLD=[]; for(const t of TOWERS) BLD.push({x1:t.x-t.w/2,x2:t.x+t.w/2,z1:t.z-t.d/2,z2:t.z+t.d/2,h:t.h+1.5});
+ if(typeof HK!=='undefined'&&HK.cave){ const H=HK.cave; BLD.push({x1:H.x-11,x2:H.x+11,z1:H.z-8,z2:H.z+8,h:H.h+6}); }
+ for(const b of buildingsMap){ if(b.park) continue; const w=b.x2-b.x1, d=b.z2-b.z1; if(w<2||d<2||w*d>2600) continue; if(BLD.some(o=>b.x1>=o.x1-0.5&&b.x2<=o.x2+0.5&&b.z1>=o.z1-0.5&&b.z2<=o.z2+0.5)) continue; BLD.push({x1:b.x1,x2:b.x2,z1:b.z1,z2:b.z2,h:13}); } }
+function bldAt(x,y,z,m){ if(!BLD) buildBLD(); m=m||0; for(const b of BLD){ if(x>b.x1-m&&x<b.x2+m&&z>b.z1-m&&z<b.z2+m&&y<b.h) return b; } return null; }
+
+// ---------- 2) Uçak paneli: kamera seçimi, uzaklık, gaz düğmeleri, paraşüt
+(function(){ const st=document.createElement('style'); st.textContent=`#plPanel{position:fixed;left:64px;top:max(205px,30%);display:none;flex-direction:column;gap:7px;z-index:21;background:rgba(10,20,40,.72);padding:8px;border-radius:12px;color:#fff;font-size:12px;font-weight:700;width:150px}
+#plPanel button{border:0;border-radius:9px;padding:8px 6px;font-weight:800;font-size:13px;background:#37474f;color:#fff;cursor:pointer;touch-action:none} #plPanel button.on{background:#1e88e5}
+#plPanel .row{display:flex;gap:6px} #plPanel .row button{flex:1} #plPanel input{width:100%} #plPanel .gas{background:#2e7d32} #plPanel .gasm{background:#c62828}
+#plThr{height:8px;border-radius:4px;background:#263238;overflow:hidden} #plThr i{display:block;height:100%;background:linear-gradient(90deg,#ffca28,#ff7043);width:0}
+#paraBtn{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:40;display:none;font-size:26px;font-weight:900;padding:18px 30px;border-radius:18px;border:4px solid #fff;background:#d50000;color:#fff;box-shadow:0 0 30px rgba(255,0,0,.7);animation:blink .6s infinite;cursor:pointer}
+@media (max-width:700px){ #plPanel{left:58px;width:132px;font-size:11px} }`; document.head.appendChild(st);
+ const d=document.createElement('div'); d.id='plPanel'; d.innerHTML=`<div id="plHd" style="cursor:pointer">✈️ Uçuş paneli <span id="plTg">▾</span></div><div id="plBody" style="display:flex;flex-direction:column;gap:7px"><div>🎥 Kamera</div><div class="row"><button id="plCk">🧑‍✈️ Kokpit</button><button id="plCh">✈️ Arkadan</button></div>
+ <div id="plDistW">↔️ Uzaklık: <span id="plDistV">1.0</span><input id="plDist" type="range" min="0.35" max="3" step="0.05" value="1"></div></div>
+ <div>⛽ Gaz <span id="plThV">0</span>% <div id="plThr"><i></i></div></div><div class="row"><button class="gasm" id="plGd">− Gaz</button><button class="gas" id="plGu">+ Gaz</button></div><div style="font-size:11px;opacity:.85">Gaz ver → yüksel · Gazı kes → alçal / in</div>`; document.body.appendChild(d);
+ const pb=document.createElement('button'); pb.id='paraBtn'; pb.innerHTML='🪂 PARAŞÜTLE ATLA! <small style="font-size:14px">(P)</small>'; document.body.appendChild(pb);
+ $('plCk').onclick=()=>{ CAM.mode='cockpit'; }; $('plCh').onclick=()=>{ CAM.mode='chase'; };
+ $('plDist').oninput=e=>{ CK30.zoom=+e.target.value; };
+ const hold=(id,k)=>{ const b=$(id); b.addEventListener('pointerdown',e=>{ e.preventDefault(); keys[k]=true; }); ['pointerup','pointerleave','pointercancel'].forEach(t=>b.addEventListener(t,()=>{ keys[k]=false; })); }; hold('plGu','KeyW'); hold('plGd','KeyS');
+ pb.onclick=()=>paraJump(); const tg=()=>{ const bd=$('plBody'), o=bd.style.display!=='none'; bd.style.display=o?'none':'flex'; $('plTg').textContent=o?'▸':'▾'; }; $('plHd').onclick=tg; if(innerHeight<620) tg();
+ addEventListener('keydown',e=>{ if(e.code==='KeyP'&&PLN.phase==='crash') paraJump(); }); })();
+function updatePlPanel(){ const on=DRIVE2.mode==='plane'&&!['atc','atc2'].includes(PLN.phase); $('plPanel').style.display=on?'flex':'none'; if(!on) return; const ck=CAM.mode==='cockpit'||CAM.mode==='hood';
+ $('plCk').classList.toggle('on',ck); $('plCh').classList.toggle('on',!ck); $('plDistW').style.opacity=ck?0.45:1; $('plDist').value=CK30.zoom; $('plDistV').textContent=CK30.zoom.toFixed(2)+'×'; $('plThV').textContent=(PLN.th*100)|0; $('plThr').firstChild.style.width=(PLN.th*100)+'%'; }
+
+// ---------- 3) Uçuş fiziği: gaz → tırmanma, gaz kes → alçalma; binaya çarpma → düşüş
+const CR34={t:0,eject:false,smoke:[],vy:0,spin:0};
+const _updPlane34=updatePlane; updatePlane=function(dt){ const p=PLN;
+ if(p.phase==='crash') return crashUpdate(dt);
+ if(p.phase==='wreck') return;
+ const th0=p.th, noKey=!keys.KeyW&&!keys.KeyS; _updPlane34(dt);
+ if(DRIVE2.mode!=='plane') return;
+ if(p.phase==='flight'&&!p.ground){ if(noKey&&p.th>th0) p.th=th0; // otomatik gaz artışı yok: gazı kesersen alçalır
+  let climb=(p.th-0.45)*16; if(p.v<20) climb=Math.min(climb,-2); if(p.y<14&&climb<0) climb=Math.max(climb,-2.6);
+  p.y=Math.max(0.02,p.y+climb*dt); p.climb=lerp(p.climb||0,climb,Math.min(1,dt*2)); p.g.position.y=p.y; p.g.rotation.z=p.pitch+clamp(p.climb*0.025,-0.2,0.22);
+  // bina çarpması
+  const fx=Math.cos(p.h), fz=-Math.sin(p.h); if(bldAt(p.x+fx*3,p.y+0.5,p.z+fz*3,1.2)||bldAt(p.x,p.y,p.z,1.0)) startCrash(); } };
+function startCrash(){ const p=PLN; p.phase='crash'; CR34.t=0; CR34.eject=false; CR34.vy=0; CR34.spin=0; CAM.mode='chase'; CK30.zoom=Math.max(CK30.zoom,1.2);
+ p.h+=Math.PI*0.9; p.v=Math.min(p.v,18); // çarpıp geri sekti
+ $('paraBtn').style.display='block'; try{ sfxThunder(); }catch(e){} toast('💥 <b>Uçak binaya çarptı!</b> Hemen paraşütle atla! <i>Mayday, mayday!</i>',5000); try{ sayEn('Mayday! Mayday! Jump now!'); }catch(e){} }
+function smokePuff(x,y,z,fire){ const m=new THREE.Mesh(new THREE.SphereGeometry(fire?0.6:0.9,7,5),new THREE.MeshBasicMaterial({color:fire?0xff6d00:0x424242,transparent:true,opacity:fire?0.9:0.6,depthWrite:false})); m.position.set(x,y,z); scene.add(m); CR34.smoke.push({m,t:0,life:fire?0.6:2.4,vy:fire?1:2.2}); }
+function updateSmoke(dt){ for(let i=CR34.smoke.length-1;i>=0;i--){ const s=CR34.smoke[i]; s.t+=dt; s.m.position.y+=s.vy*dt; s.m.scale.multiplyScalar(1+dt*0.9); s.m.material.opacity*=Math.exp(-dt*1.2); if(s.t>s.life){ scene.remove(s.m); CR34.smoke.splice(i,1); } } }
+function crashUpdate(dt){ const p=PLN; CR34.t+=dt; CR34.vy-=9.8*dt*0.8; CR34.spin+=dt*2.4; p.v*=Math.exp(-dt*0.4);
+ p.x+=Math.cos(p.h)*p.v*dt; p.z+=-Math.sin(p.h)*p.v*dt; p.y+=CR34.vy*dt; p.h+=dt*1.6; p.bank=Math.sin(CR34.spin)*0.9; p.pitch=-0.6;
+ const b=bldAt(p.x,p.y,p.z,0.5); if(b&&p.y>0.5){ p.y=Math.max(p.y,b.h); CR34.vy=Math.max(CR34.vy,0); }
+ if(Math.random()<dt*14) smokePuff(p.x,p.y+0.6,p.z,false); if(Math.random()<dt*10) smokePuff(p.x+rnd(-0.5,0.5),p.y+0.4,p.z,true);
+ p.g.position.set(p.x,Math.max(0,p.y),p.z); p.g.rotation.set(-p.bank,p.h,p.pitch); p.prop.rotation.x+=dt*4;
+ if(!CR34.eject){ player.x=p.x; player.z=p.z; if(player.h) player.h.g.visible=false; const hud=$('taxiHud'); hud.style.display='block'; hud.innerHTML=`<div class="warn">💥 MAYDAY! İrtifa ${(Math.max(0,p.y)*3.28)|0} ft — PARAŞÜTLE ATLA (P)!</div>`; }
+ if(p.y<=0){ p.y=0; p.phase='wreck'; $('paraBtn').style.display='none'; for(let i=0;i<14;i++) smokePuff(p.x+rnd(-3,3),0.5,p.z+rnd(-3,3),i%2===0); try{ sfxThunder(); }catch(e){}
+  if(!CR34.eject){ // atlamadı: kurtarma ekibi
+   finishPlaneCrash(); const q=cityClamp(p.x+6,p.z+6); player.x=q[0]; player.z=q[1]; const c=collide(player.x,player.z,0.4); player.x=c[0]; player.z=c[1]; player.y=0; player.h.g.visible=true;
+   try{ addMoney(-150); }catch(e){} toast('🚑 Uçak yere çakıldı ama kurtarma ekibi seni çıkardı. Tedavi ve hasar: −150 ₺. Bir dahaki sefere <b>🪂 paraşütle atla!</b>',6500); }
+  setTimeout(()=>{ p.phase='parked'; p.ground=true; p.v=0; p.th=0; p.y=0; p.x=-55; p.z=-116; p.h=0; p.pitch=0; p.bank=0; p.g.position.set(p.x,0,p.z); p.g.rotation.set(0,0,0); },7000); } }
+function finishPlaneCrash(){ DRIVE2.mode=null; $('taxiHud').style.display='none'; try{ wpRings.forEach(r=>r.visible=false); }catch(e){} $('paraBtn').style.display='none'; CAM.mode=S.camMode||'chase'; }
+
+// ---------- 4) Paraşüt
+const PARA={on:false,x:0,y:0,z:0,h:0,vx:0,vz:0,g:null};
+(function(){ const g=new THREE.Group(); scene.add(g); g.visible=false; const cols=[0xff5252,0xffffff,0xff9800,0xffffff];
+ for(let i=0;i<8;i++){ const seg=new THREE.Mesh(new THREE.SphereGeometry(3,8,4,i*Math.PI/4,Math.PI/4,0,Math.PI/2.6),new THREE.MeshStandardMaterial({color:cols[i%4],side:THREE.DoubleSide,roughness:.8})); seg.scale.y=0.55; seg.position.y=4.2; g.add(seg); }
+ const lm=new THREE.LineBasicMaterial({color:0x333333}); for(let i=0;i<8;i++){ const a=i*Math.PI/4; const geo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,1.4,0),new THREE.Vector3(Math.cos(a)*2.4,4.6,Math.sin(a)*2.4)]); g.add(new THREE.Line(geo,lm)); }
+ PARA.g=g; })();
+function paraJump(){ const p=PLN; if(p.phase!=='crash'||CR34.eject) return; CR34.eject=true; $('paraBtn').style.display='none'; finishPlaneCrash(); p.phase='crash'; // uçak düşmeye devam eder
+ DRIVE2.mode=null; Object.assign(PARA,{on:true,x:p.x-Math.sin(p.h)*3,y:Math.max(p.y,25),z:p.z-Math.cos(p.h)*3,h:p.h,vx:0,vz:0,open:0}); PARA.g.visible=true; player.h.g.visible=true; player.car=null; player.target=null;
+ toast('🪂 Atladın! Paraşüt açıldı. W/S/A/D (ya da yön tuşları) ile yönlendir, güvenli bir yere in. <i>I\'m okay!</i>',6000); try{ sayEn('Phew! The parachute is open!'); }catch(e){} }
+// düşen uçağı (oyuncu atladıktan sonra) güncelle
+const _up6_34=updateP6; updateP6=function(dt){ _up6_34(dt); try{ updatePlPanel(); updateSmoke(dt); if(PLN.phase==='crash'&&DRIVE2.mode!=='plane') crashUpdate(dt); }catch(e){ if(!updateP6._e34){ updateP6._e34=1; console.warn(e); } } };
+const _updPlayer34=updatePlayer; updatePlayer=function(dt){ if(!PARA.on) return _updPlayer34(dt); const P=player;
+ const fw=(keys.KeyW||keys.ArrowUp||mob.u?1:0)-(keys.KeyS||keys.ArrowDown||mob.d?1:0), tr=(keys.KeyA||keys.ArrowLeft||mob.l?1:0)-(keys.KeyD||keys.ArrowRight||mob.r?1:0);
+ PARA.open=Math.min(1,PARA.open+dt*1.5); PARA.h+=tr*dt*1.1; const sp=3.5+fw*2.5; PARA.vx+=(Math.cos(PARA.h)*sp-PARA.vx)*dt; PARA.vz+=(-Math.sin(PARA.h)*sp-PARA.vz)*dt;
+ PARA.x+=PARA.vx*dt; PARA.z+=PARA.vz*dt; PARA.y-=(PARA.open<1?9:4.2)*dt;
+ const b=bldAt(PARA.x,PARA.y,PARA.z,0.3); if(b&&PARA.y<b.h+0.2&&PARA.y>b.h-2){ PARA.y=b.h; } // çatıya konabilir
+ const ground=b&&PARA.y<=b.h+0.01?b.h:0;
+ P.x=PARA.x; P.z=PARA.z; P.yaw=Math.atan2(PARA.vx,PARA.vz); P.h.g.position.set(P.x,PARA.y,P.z); P.h.g.rotation.y=P.yaw; P.h.anim='idle'; if(P.h.lSh){ P.h.lSh.rotation.x=-2.8; P.h.rSh.rotation.x=-2.8; }
+ PARA.g.position.set(P.x,PARA.y+0.6,P.z); PARA.g.rotation.y=-PARA.h; PARA.g.scale.setScalar(0.3+PARA.open*0.7);
+ const hud=$('taxiHud'); hud.style.display='block'; hud.innerHTML=`🪂 PARAŞÜT · İrtifa <b>${Math.max(0,PARA.y-ground).toFixed(0)} m</b><div style="font-size:12px;opacity:.85">W hızlan · S yavaşla · A/D dön — boş bir alana in</div>`;
+ if(PARA.y<=ground+0.02){ PARA.on=false; PARA.g.visible=false; hud.style.display='none'; P.y=ground; if(ground===0){ const q=cityClamp(P.x,P.z); const c=collide(q[0],q[1],0.4); P.x=c[0]; P.z=c[1]; } else { const q=cityClamp(b.x2+1.5,P.z); P.x=q[0]; P.z=q[1]; P.y=0; }
+  P.h.g.position.y=0; S.paraJumps=(S.paraJumps||0)+1; save(); toast('✅ Güvenle indin! Paraşütle kurtuldun. 🎖️ <i>I made it! That was close!</i>'+(ground?' (Çatıya indin, merdivenden aşağı indin.)':''),5500); try{ sayEn('I made it! That was close!'); }catch(e){} } };
+const _uc34=updateCamera; updateCamera=function(dt){ _uc34(dt); if(!PARA.on) return; const P=player; const fx=Math.cos(PARA.h), fz=-Math.sin(PARA.h);
+ camera.position.set(P.x-fx*11,PARA.y+5.5,wz(P.z-fz*11)); camera.lookAt(P.x+fx*4,PARA.y-1,wz(P.z+fz*4)); camera.updateMatrixWorld(); };
+
+// ---------- 5) Drone: binaların içinden geçmesin
+const _updDrone34=updateDrone; updateDrone=function(dt){ const d=DRN, ox=d.x, oy=d.y, oz=d.z; _updDrone34(dt); if(DRIVE2.mode!=='drone') return; const b=bldAt(d.x,d.y,d.z,0.4); if(b){ if(oy>=b.h-0.2){ d.y=b.h; d.vy=Math.max(0,d.vy); } else { d.x=ox; d.z=oz; d.vx*=-0.3; d.vz*=-0.3; if(!d._bt||T-d._bt>2){ d._bt=T; toast('🧱 Drone binaya çarptı! Yüksel (R) ya da etrafından dolaş.',2200); } } d.g.position.set(d.x,d.y,d.z); } };
+
+// ---------- 6) Arabalar / yarış araçları: bina duvarlarından geçmesin
+const _updTaxi34=updateTaxi; updateTaxi=function(dt){ const c=player.car; const ox=c?c.x:0, oz=c?c.z:0; _updTaxi34(dt); const c2=player.car; if(!c2||c2!==c) return;
+ if(typeof isRoadAt==='function'&&isRoadAt(c2.x,c2.z)) return; const q=collide(c2.x,c2.z,c2.rad||0.9); if(Math.hypot(q[0]-c2.x,q[1]-c2.z)>0.001){ c2.x=q[0]; c2.z=q[1]; c2.v*=0.4; c2.g.position.set(c2.x,0,c2.z); player.x=c2.x; player.z=c2.z; } };
+const _updD2_34=updateDrive2; updateDrive2=function(dt){ _updD2_34(dt); const d=DR2; if(!DRIVE2.mode||!d||!d.veh) return; const q=collide(d.x,d.z,1.0); if(Math.hypot(q[0]-d.x,q[1]-d.z)>0.001){ d.x=q[0]; d.z=q[1]; d.vx*=-0.25; d.vz*=-0.25; try{ d.veh.g.position.x=d.x; d.veh.g.position.z=d.z; }catch(e){} } };
+// tekne: kıyıdaki bina vb. (seaPush zaten kıyıdan uzak tutuyor)
 
 </script>
 </body>
