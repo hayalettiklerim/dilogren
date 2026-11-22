@@ -7852,6 +7852,101 @@ const _updTaxi34=updateTaxi; updateTaxi=function(dt){ const c=player.car; const 
 const _updD2_34=updateDrive2; updateDrive2=function(dt){ _updD2_34(dt); const d=DR2; if(!DRIVE2.mode||!d||!d.veh) return; const q=collide(d.x,d.z,1.0); if(Math.hypot(q[0]-d.x,q[1]-d.z)>0.001){ d.x=q[0]; d.z=q[1]; d.vx*=-0.25; d.vz*=-0.25; try{ d.veh.g.position.x=d.x; d.veh.g.position.z=d.z; }catch(e){} } };
 // tekne: kıyıdaki bina vb. (seaPush zaten kıyıdan uzak tutuyor)
 
+// ================= v32: TEMİZ EKRAN — tüm düğmeler Ayarlar'da, ana ekranda sadece seçtiklerin · konuşma penceresi ince saydamlık · konuşurken akış sürer =================
+// ---------- 1) Ekran öğeleri
+const HUDI=[
+ ['stats','📊 Üst bilgi çubuğu (seviye, para, saat, enerji…)','#top > :not(#topBtns)',0],
+ ['mission','🎯 Görev kartı','#mission',0],
+ ['minimap','🗺️ Mini harita','#minimap',1],
+ ['hudInfo','ℹ️ Bilgi kutusu','#hudInfo',0],
+ ['mob','🕹️ Yön tuşları (joystick)','#mob',1],
+ ['mRun','🏃 Koş düğmesi','#mRun',1],
+ ['lookPad','⤒⤓ Yukarı / aşağı bakış','#lookPad',0],
+ ['act','👆 Eylem düğmeleri (Konuş, Bin, İn…)','#act',1],
+ ['bHub','☰ Menü düğmesi','#bHub',1],
+ ['bMap','🗺️ Harita düğmesi','#bMap',0],
+ ['bWeather','🌦️ Hava düğmesi','#bWeather',0],
+ ['bTime','🌗 Zaman düğmesi','#bTime',0],
+ ['bFpv','👁️ Gözümden düğmesi','#bFpv',0],
+ ['bMute','🔊 Ses düğmesi','#bMute',0],
+ ['bSet','⚙️ Ayarlar düğmesi (üstte)','#bSet',0],
+ ['bHelp','❔ Yardım düğmesi','#bHelp',0],
+ ['bFull','⛶ Tam ekran düğmesi','#bFull',0],
+ ['zoomBtns','🔍 Kamera yakınlaştırma düğmeleri','#zoomBtns',1],
+ ['plPanel','✈️ Uçuş paneli','#plPanel',1],
+ ['radar','📡 Uçak radarı','#radar, #rdInfo',1],
+ ['taxiHud','🚗 Sürüş / görev bilgi kutusu','#taxiHud',1],
+ ['lookBtns','↔️ Kokpit bakış düğmeleri','#lookBtns',1]];
+const PHONE=document.body.classList.contains('touch')||matchMedia('(pointer:coarse)').matches||Math.min(innerWidth,innerHeight)<560;
+if(!S.hud){ S.hud={}; HUDI.forEach(h=>S.hud[h[0]]=PHONE?!!h[3]:true); if(!PHONE) S.hud.bSet=true; }
+HUDI.forEach(h=>{ if(S.hud[h[0]]===undefined) S.hud[h[0]]=PHONE?!!h[3]:true; });
+if(S.dop===undefined) S.dop=PHONE?0.3:0.45; if(!S.dsize) S.dsize=PHONE?'small':'normal'; if(S.moveTalk===undefined) S.moveTalk=true;
+const hudStyle=document.createElement('style'); document.head.appendChild(hudStyle);
+function applyHud(){ let css=''; for(const [k,,sel] of HUDI){ if(!S.hud[k]||S.clean&&!['mob','mRun','act'].includes(k)) css+=sel.split(',').map(s=>'body '+s.trim()).join(',')+'{display:none!important}\n'; } hudStyle.textContent=css;
+ $('fabSet').style.display=S.hud.bSet&&!S.clean?'none':'flex'; $('fabClean').textContent=S.clean?'👁️':'🙈'; $('fabClean').title=S.clean?'Düğmeleri geri getir':'Temiz ekran (sahneyi gör)';
+ document.body.classList.toggle('moveTalk',!!S.moveTalk&&!!S.hud.mob); document.body.classList.toggle('dSmall',S.dsize==='small'); document.body.classList.toggle('dMini',S.dsize==='mini');
+ document.documentElement.style.setProperty('--dop',S.dop); document.documentElement.style.setProperty('--dblur',S.dop<0.45?'0px':(S.dop<0.7?'3px':'8px')); }
+
+// ---------- 2) Her zaman görünen küçük ⚙️ ve 🙈 düğmeleri
+(function(){ const st=document.createElement('style'); st.textContent=`
+#fabs{position:fixed;right:8px;top:8px;z-index:31;display:flex;gap:6px}
+#fabs button{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(12,18,30,.45);color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px)}
+/* konuşma penceresi: ayrı, ince ayarlı saydamlık */
+#dialog.glass{background:rgba(12,18,30,var(--dop))!important;backdrop-filter:blur(var(--dblur))!important;-webkit-backdrop-filter:blur(var(--dblur))!important;box-shadow:0 4px 16px rgba(0,0,0,calc(var(--dop)*.5))!important;border-color:rgba(255,255,255,calc(.08 + var(--dop)*.2))!important}
+#dialog .ln,#dialog .opt,#dialog .dh,#dialog b,#dialog small{text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 6px rgba(0,0,0,.7)}
+#dialog .ln.npc{background:rgba(20,26,40,calc(.15 + var(--dop)*.5))} #dialog .ln.you{background:rgba(40,100,220,calc(.25 + var(--dop)*.45))}
+#dialog .opt{background:rgba(20,26,40,calc(.2 + var(--dop)*.5))}
+#dOpR{width:90px} body.indialog.moveTalk.dpad #mob,body.indialog.moveTalk.dpad #mRun{display:block} #dialog input,#dialog textarea{background:rgba(10,14,24,calc(.25 + var(--dop)*.6))!important}
+body.dSmall #dialog{max-height:42vh;padding:7px 9px} body.dSmall .ln{font-size:13.5px;padding:5px 9px} body.dSmall .opt{font-size:13px;padding:6px 8px} body.dSmall #dOpts{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+body.dMini #dialog{max-height:31vh;padding:5px 7px} body.dMini .ln{font-size:12.5px;padding:4px 8px} body.dMini .ln .tr,body.dMini .opt .tr{font-size:11px} body.dMini .opt{font-size:12.5px;padding:5px 7px} body.dMini #dOpts{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:4px}
+@media (min-width:700px){ body.touch #dialog:not(.moved){left:auto;right:8px;transform:none;width:min(640px,calc(100vw - 190px))} }
+#hudSet .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px} #hudSet .hi{display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(255,255,255,.07);border-radius:10px;padding:6px 9px;font-size:13.5px}
+#hudSet .qa{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin:6px 0 12px} #hudSet .qa button{padding:10px 6px;border-radius:12px;border:0;background:#1e88e5;color:#fff;font-weight:800;font-size:14px;cursor:pointer}
+#hudSet h5{margin:12px 0 6px;font-size:14px} #hudSet .seg button{padding:7px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#fff;font-weight:700;margin-right:5px;cursor:pointer} #hudSet .seg button.on{background:#3ddc84;color:#000}`; document.head.appendChild(st);
+ const f=document.createElement('div'); f.id='fabs'; f.innerHTML='<button id="fabClean" title="Temiz ekran">🙈</button><button id="fabSet" title="Ayarlar ve tüm seçenekler">⚙️</button>'; document.body.appendChild(f);
+ $('fabSet').onclick=()=>$('bSet').onclick(); $('fabClean').onclick=()=>{ S.clean=!S.clean; save(); applyHud(); toast(S.clean?'🙈 Temiz ekran: sadece hareket ve eylem düğmeleri. Geri getirmek için 👁️':'👁️ Seçtiğin düğmeler geri geldi',2200); }; })();
+// sağ üstteki diğer öğeler fab'ın altına kaysın
+(function(){ const st=document.createElement('style'); st.textContent='#topBtns{margin-right:96px}'; document.head.appendChild(st); })();
+
+// ---------- 3) Ayarlar: hızlı erişim + ekranda görünenler + konuşma penceresi
+const QA=[['bHub','☰ Menü'],['bMap','🗺️ Harita'],['bWeather','🌦️ Hava'],['bTime','🌗 Zaman'],['bFpv','👁️ Gözümden'],['bMute','🔊 Ses aç/kapa'],['bHelp','❔ Yardım'],['bFull','⛶ Tam ekran']];
+const _bSet35=$('bSet').onclick; $('bSet').onclick=function(){ _bSet35(); const box=$('menuBox'); if(!box) return; const h=box.firstElementChild; const wrap=document.createElement('div'); wrap.id='hudSet';
+ wrap.innerHTML=`<h5>⚡ Hızlı erişim</h5><div class="qa">${QA.filter(q=>$(q[0])).map(q=>`<button data-q="${q[0]}">${q[1]}</button>`).join('')}</div>
+ <h5>💬 Konuşma penceresi</h5>
+ <div class="hi"><span>🪟 Arka plan saydamlığı: <b id="dopV">${Math.round(S.dop*100)}%</b> <small>(0 = tamamen şeffaf)</small></span><input type="range" id="sDop" min="0" max="0.95" step="0.01" value="${S.dop}" style="flex:1;max-width:220px"></div>
+ <div class="hi"><span>📏 Pencere boyutu</span><span class="seg">${[['mini','Çok küçük'],['small','Küçük'],['normal','Normal']].map(o=>`<button data-ds="${o[0]}" class="${S.dsize===o[0]?'on':''}">${o[1]}</button>`).join('')}</span></div>
+ <div class="hi"><span>🚶 Konuşurken yürüyebileyim (oyun akışı durmasın)</span><button class="sw ${S.moveTalk?'on':''}" id="sMoveTalk"></button></div>
+ <h5>🖥️ Ana ekranda göster <small style="font-weight:400;opacity:.8">(kapalı olanlar sadece burada olur)</small></h5>
+ <div class="seg" style="margin-bottom:6px"><button id="hudMin">📱 En sade</button><button id="hudAll">🖥️ Hepsi</button></div>
+ <div class="grid2">${HUDI.map(([k,l])=>`<div class="hi"><span>${l}</span><button class="sw ${S.hud[k]?'on':''}" data-hk="${k}"></button></div>`).join('')}</div>`;
+ if(h&&h.nextSibling) box.insertBefore(wrap,h.nextSibling); else box.appendChild(wrap);
+ wrap.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{ const id=b.dataset.q; closeMenu(); setTimeout(()=>{ const el=$(id); if(el) el.click(); },60); });
+ $('sDop').oninput=e=>{ S.dop=+e.target.value; $('dopV').textContent=Math.round(S.dop*100)+'%'; if($('dOpR')) $('dOpR').value=S.dop; applyHud(); save(); };
+ wrap.querySelectorAll('[data-ds]').forEach(b=>b.onclick=()=>{ S.dsize=b.dataset.ds; wrap.querySelectorAll('[data-ds]').forEach(x=>x.classList.toggle('on',x===b)); applyHud(); save(); });
+ $('sMoveTalk').onclick=()=>{ S.moveTalk=!S.moveTalk; $('sMoveTalk').classList.toggle('on',S.moveTalk); applyHud(); save(); };
+ wrap.querySelectorAll('[data-hk]').forEach(b=>b.onclick=()=>{ const k=b.dataset.hk; S.hud[k]=!S.hud[k]; b.classList.toggle('on',S.hud[k]); S.clean=false; applyHud(); save(); });
+ const setAll=v=>{ HUDI.forEach(x=>S.hud[x[0]]=v===null?!!x[3]:v); if(v===null) S.hud.bSet=false; wrap.querySelectorAll('[data-hk]').forEach(b=>b.classList.toggle('on',S.hud[b.dataset.hk])); S.clean=false; applyHud(); save(); };
+ $('hudMin').onclick=()=>setAll(null); $('hudAll').onclick=()=>setAll(true);
+ // eski "Panel saydamlığı" satırını konuşma penceresinden ayır: artık sadece diğer paneller
+ const op=$('sOp'); if(op&&op.closest('.row')) op.closest('.row').firstElementChild.textContent='🪟 Diğer panellerin saydamlığı'; };
+// diyalog başlığındaki saydamlık kaydırıcısı: konuşma penceresi için, daha hassas
+(function(){ const r=$('dOpR'); if(!r) return; r.min='0'; r.max='0.95'; r.step='0.01'; r.value=S.dop; r.title='Konuşma penceresi saydamlığı (0 = şeffaf)'; r.oninput=e=>{ S.dop=+e.target.value; applyHud(); save(); }; })();
+
+// ---------- 4) Konuşurken yürü (dünya zaten akıyor; artık karakter de hareket edebilir)
+const _upl35=updatePlayer; updatePlayer=function(dt){ _upl35(dt); const P=player;
+ if(!S.moveTalk||!D.active||!D.npc||P.car||P.seat||P.bus||P.hidden||menuOpen()||(typeof DRIVE2!=='undefined'&&DRIVE2.mode)||(typeof ROOM!=='undefined'&&ROOM.sleeping)) return;
+ const ae=document.activeElement; if(ae&&(ae.tagName==='INPUT'&&ae.type!=='range'||ae.tagName==='TEXTAREA')) return;
+ const f=(keys.KeyW||keys.ArrowUp||mob.u?1:0)-(keys.KeyS||keys.ArrowDown||mob.d?1:0), s=(keys.KeyD||keys.ArrowRight||mob.r?1:0)-(keys.KeyA||keys.ArrowLeft||mob.l?1:0); if(!f&&!s) return;
+ const yaw=camS.yaw, fx=-Math.sin(yaw), fz=-Math.cos(yaw), rx=-fz, rz=fx; let mx=fx*f+rx*s, mz=fz*f+rz*s; const l=Math.hypot(mx,mz)||1; mx/=l; mz/=l; const sp=3.0;
+ let nx=P.x+mx*sp*dt, nz=P.z+mz*sp*dt; const c=collide(nx,nz,0.35); nx=c[0]; nz=c[1]; if(!(P.zone&&P.zone.room)){ const q=cityClamp(nx,nz); nx=q[0]; nz=q[1]; } if(P.zone){ nx=clamp(nx,P.zone.x1,P.zone.x2); nz=clamp(nz,P.zone.z1,P.zone.z2); }
+ P.x=nx; P.z=nz; P.yaw=Math.atan2(mx,mz); P.h.anim='walk'; P.h.g.position.x=P.x; P.h.g.position.z=P.z; P.h.g.rotation.y=P.yaw;
+ const n=D.npc; if(!n.sitting&&!n.virtual&&n.state!=='static'&&Math.hypot(n.x-P.x,n.z-P.z)>2.2&&!n.office&&!n.seatLock){ /* kişi seninle yürür */ const d=Math.hypot(n.x-P.x,n.z-P.z); if(d>2.4&&typeof stepTo==='function'){ stepTo(n,P.x-mx*1.6+mz*0.9,P.z-mz*1.6-mx*0.9,Math.min(3.4,d*1.2),dt); n.h.anim='walk'; } }
+ if(!n.virtual&&Math.hypot(n.x-P.x,n.z-P.z)>14){ D.closed=!D.finished; endDialog(); D.closed=false; toast('👋 Uzaklaştın, konuşma bitti. <i>See you later!</i>',2200); } };
+
+// ---------- 5) Başlat
+applyHud();
+const _sg35=startGame; startGame=function(){ const r=_sg35.apply(this,arguments); setTimeout(()=>{ applyHud(); if(PHONE&&!S.hudTold){ S.hudTold=1; save(); toast('📱 Ekran sadeleştirildi. Tüm seçenekler sağ üstteki ⚙️ Ayarlar\'da; 🙈 ile tamamen temiz ekran.',6500); } },600); return r; };
+
 </script>
 </body>
 </html>
